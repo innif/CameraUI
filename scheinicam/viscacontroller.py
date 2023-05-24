@@ -30,7 +30,7 @@ class ViscaController:
     def move_to(self, sx, sy, x, y):
         self.cam.pantilt(sx, sy, x, y, relative=True)
 
-    def zoom(self):
+    def zoom_test(self):
         print("Tele Standard")
         self.cam._send_command("04 07 02")
         time.sleep(1)
@@ -47,14 +47,4 @@ if __name__ == "__main__":
     time.sleep(2)
     while True:
         print("zoom")
-        visca_controller.zoom()
-        # time.sleep(2)
-        # let the user input two hex-values in the console
-        # x = int(input("x: "), 16)
-        # y = int(input("y: "), 16)
-        # sx = int(input("sx: "))
-        # sy = int(input("sy: "))
-        # visca_controller.move_to(sx, sy, x, y)
-        # time.sleep(10)
-        # print("home")
-        # visca_controller.home_camera()
+        visca_controller.zoom_test()
