@@ -1,17 +1,10 @@
 from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
-import obsws_python as obs
+from obscontroller import ObsController
 
 name = ""
 status = "Bereit"
 recording = False
-try:
-    cl = obs.ReqClient(host='localhost', port=4455, password='tXqFcBWo7WngUnAs')
-    resp = cl.get_record_status()
-    print(resp)
-except Exception as e:
-    e.printStackTrace()
-    print("OBS nicht erreichbar")
 
 def update_name(event: ValueChangeEventArguments):
     global name
@@ -42,6 +35,7 @@ def stop_record():
     recording = False
     recording_icon.visible = recording
 
+obs_controller = ObsController()
 # Title
 # ui.markdown('# ScheiniCam')
 
@@ -53,7 +47,7 @@ with ui.tabs() as tabs:
 with ui.tab_panels(tabs, value='Aufnahme'):
     with ui.tab_panel('Aufnahme'):
         # Camera Preview
-        image_url = "http://192.168.188.116:8080/video"#"https://www.scheinbar.de/site/assets/files/11659/scheinbar_by_max_zerrahn-10.jpeg"
+        image_url = "http://192.168.188.116:8080/video" #"https://www.scheinbar.de/site/assets/files/11659/scheinbar_by_max_zerrahn-10.jpeg"
         html = f"<img src=\"{image_url}\" width=\"500\" style=\"max-width: 100%\"/>"
         ui.html(html)
         # Buttons
