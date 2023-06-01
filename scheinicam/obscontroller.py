@@ -1,42 +1,42 @@
 import obsws_python as obs
 import time
-from datetime import datetime
+from filemanager import VideoFile
 
 HOST = "localhost"
 PORT = 4455
 PASSWORD = "tXqFcBWo7WngUnAs"
 
 class ObsController:
-    def __init__(self, host=HOST, port=PORT, password=PASSWORD):
+    def __init__(self, host=HOST, port=PORT, password=PASSWORD): # TODO: Error handling
         '''Initialize ObsController'''
         self.client = obs.ReqClient(host=host, port=port, password=password)
         status = self.client.get_record_status()
         self.recording = status.output_active
         self.preview = ""
-        self.filename = ""
+        self.file = None
 
-    def _generate_filename(self, name):
-        '''Generate filename'''
-        now = datetime.now()
-        output = now.strftime("%y-%m-%d_%H-%M-%S")
-        return f"{name}_{output}"
+    
 
-    def record(self, name):
-        '''Start recording with given name'''
+    def record(self, name, ip): # TODO: Error handling
+        '''
+        Start recording with given name
+        '''
         if self.recording: 
             return # Recording already running
-        filename = self._generate_filename(name)
-        self.client.set_profile_parameter("Output", "FilenameFormatting", filename)
+        self.file = VideoFile(name, ip=ip)
+        print(ip)
+        self.client.set_profile_parameter("Output", "FilenameFormatting", self.file.filename)
         self.client.start_record()
         self.recording = True
 
-    def stop(self):
+    def stop(self): # TODO: Error handling
         '''Stop recording'''
         if not self.recording:
             return # No recording running
         self.client.stop_record()
+        self.file.set_end_time()
         self.recording = False
-        self.filename = ""
+        return self.file
 
     def get_screenshot(self):
         '''Get screenshot'''
@@ -49,6 +49,5 @@ class ObsController:
 
 if __name__ == "__main__":
     obs_controller = ObsController()
-    obs_controller.record("test")
     time.sleep(5)
     obs_controller.stop()
