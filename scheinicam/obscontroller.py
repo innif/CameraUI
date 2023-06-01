@@ -1,6 +1,7 @@
 import obsws_python as obs
 import time
 from filemanager import VideoFile
+import threading
 
 HOST = "localhost"
 PORT = 4455
@@ -9,13 +10,27 @@ PASSWORD = "tXqFcBWo7WngUnAs"
 class ObsController:
     def __init__(self, host=HOST, port=PORT, password=PASSWORD): # TODO: Error handling
         '''Initialize ObsController'''
-        self.client = obs.ReqClient(host=host, port=port, password=password)
-        status = self.client.get_record_status()
-        self.recording = status.output_active
+        self.client = None
+        self.recording = False
         self.preview = ""
         self.file = None
+        self.connected = False
+        def connect():
+            while True:
+                if not self.connected:
+                    self._try_connect(host, port, password)
+                time.sleep(1)
+        threading.Thread(target=connect).start()
 
-    
+    def _try_connect(self, host, port, password):
+        '''Try to connect to OBS'''
+        try:
+            self.client = obs.ReqClient(host=host, port=port, password=password)
+            status = self.client.get_record_status()
+            self.recording = status.output_active
+            self.connected = True
+        except:
+            self.connected = False
 
     def record(self, name, ip): # TODO: Error handling
         '''
@@ -23,24 +38,41 @@ class ObsController:
         '''
         if self.recording: 
             return # Recording already running
-        self.file = VideoFile(name, ip=ip)
-        print(ip)
-        self.client.set_profile_parameter("Output", "FilenameFormatting", self.file.filename)
-        self.client.start_record()
-        self.recording = True
+        try:
+            self.file = VideoFile(name, ip=ip)
+        except:
+            raise Exception("Error creating VideoFile")
+        try:
+            self.client.set_profile_parameter("Output", "FilenameFormatting", self.file.filename)
+            self.client.start_record()
+            self.recording = True
+        except Exception as e:
+            self.connected = False
+            print(e)
+            raise Exception("Error starting recording")
 
     def stop(self): # TODO: Error handling
         '''Stop recording'''
         if not self.recording:
             return # No recording running
-        self.client.stop_record()
+        try:
+            self.client.stop_record()
+        except:
+            self.connected = False
+            raise Exception("Error stopping recording")
         self.file.set_end_time()
         self.recording = False
         return self.file
 
     def get_screenshot(self):
         '''Get screenshot'''
-        out = self.client.get_source_screenshot(name="main", img_format="jpg", width=512, height=288, quality=50)
+        if not self.connected:
+            return None
+        try:
+            out = self.client.get_source_screenshot(name="main", img_format="jpg", width=512, height=288, quality=50)
+        except:
+            self.connected = False
+            raise Exception("Error getting screenshot")
         return out.image_data
 
     def __del__(self):

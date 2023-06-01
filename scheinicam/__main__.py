@@ -15,6 +15,8 @@ status_text = "Bereit"
 obs_controller = ObsController()
 filemanager = Filemanager()
 
+WIDTH = "50em"
+
 app.add_static_files('/videos', 'videos')
 app.add_static_files('/assets', 'assets')
 
@@ -26,34 +28,48 @@ def start_record(name, ip):
     if name == "":
         ui.notify("Bitte Namen eingeben")
         return
-    obs_controller.record(name, ip)
-    ui.notify(f'Start recording {name}')
-    status_text = "Aufnahme für " + name + " läuft"
+    try:
+        obs_controller.record(name, ip)
+        ui.notify(f'Start recording {name}')
+        status_text = "Aufnahme für " + name + " läuft"
+    except Exception as e:
+        ui.notify(e)
+        return
 
 def stop_record():
     global status_text, recording
     if not obs_controller.recording:
         ui.notify("Keine Aufnahme läuft")
         return
-    file = obs_controller.stop()
-    filemanager.add_file(file)
-    file.export_as_json()
-    ui.notify('Stop recording')
+    try:
+        file = obs_controller.stop()
+        filemanager.add_file(file)
+        file.export_as_json()
+        ui.notify('Stop recording')
+    except Exception as e:
+        ui.notify(e)
     status_text = "Bereit"
 
 # Title
 # ui.markdown('# ScheiniCam')
 
 def recording_page(client: Client):
+    connecting_card = ui.card().style("margin-bottom: 1em;")
+    with connecting_card:
+        with ui.row().style('align-items: center'):
+            ui.spinner()
+            ui.label('Verbinde mit OBS')
+    connecting_card.bind_visibility_from(obs_controller, 'connected', backward=lambda x: not x)
+
     # Camera Preview
     with ui.expansion("Vorschau", icon="image", value=True):
         preview = ui.html("")
         preview.bind_content(globals(), 'html_preview')
 
     # Buttons
-    with ui.row().style("margin-top: 1em;"):
+    with ui.row().style("margin-top: 1em;").bind_visibility_from(obs_controller, 'connected'):
         recording_icon = ui.spinner('pie', size='1em', color='red')
-        recording_icon.bind_visibility(obs_controller, 'recording')
+        recording_icon.bind_visibility_from(obs_controller, 'recording')
         status_label = ui.badge('', color="red")
         status_label.bind_text(globals(), 'status_text')
 
@@ -61,23 +77,11 @@ def recording_page(client: Client):
     name_input = ui.input('Name').style("margin-bottom: 1em;")
 
     # Record Controls
-    with ui.row():
+    record_row = ui.row()
+    with record_row:
         ui.button('Aufnahme starten', color="red", on_click=lambda: start_record(name_input.value, client.ip))
         ui.button('Aufnahme stoppen', color="blue", on_click=stop_record)
-    
-    # PTZ-Controls
-    # ui.separator().style("margin-top: 1em; margin-bottom: 1em;")
-    # with ui.expansion("Kamera bewegen", icon="control_camera"):
-    #     with ui.column().classes('w-full items-center'):
-    #         with ui.row():
-    #             ui.button('Bühne Weit')
-    #             ui.button('Bühne Closeup')
-    #             ui.button('Klavier')
-    #         ui.joystick(color='black', size=200,
-    #         on_move=lambda e: coordinates.set_text(f"{e.x:.3f}, {e.y:.3f}"),
-    #         on_end=lambda _: coordinates.set_text('0, 0')
-    #         )
-    #         coordinates = ui.label('0, 0')
+    record_row.bind_visibility_from(obs_controller, 'connected')
 
 def download_page(client: Client):
     def refresh():
@@ -87,7 +91,7 @@ def download_page(client: Client):
                 if file.ip == client.ip:
                     file.generate_ui()
             with ui.expansion('Aufnahmen von anderen Geräten').classes('w-full'):
-                with ui.column():
+                with ui.column().classes('w-full'):
                     for file in filemanager.files:
                         if file.ip != client.ip:
                             file.generate_ui()
@@ -98,21 +102,28 @@ def download_page(client: Client):
 
 @ui.page("/")
 def index(client: Client):
-    with ui.tabs() as tabs:
-        ui.tab('Aufnahme', icon='videocam')
-        ui.tab('Download', icon='file_download')
-    # Content
-    with ui.tab_panels(tabs, value='Aufnahme'):
-        with ui.tab_panel('Aufnahme'):
-            recording_page(client)
-        with ui.tab_panel('Download'):
-            download_page(client)
+    with ui.column().style("margin: 0em; width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;"):
+        with ui.tabs().style(f"width: {WIDTH}; max-width: 100%; display: block;") as tabs: 
+            ui.tab('Aufnahme', icon='videocam')
+            ui.tab('Download', icon='file_download')
+        # Content
+        with ui.tab_panels(tabs, value='Aufnahme').style(f"width: {WIDTH}; max-width: 100%;"):
+            with ui.tab_panel('Aufnahme').style("width: 100%;"):
+                recording_page(client)
+            with ui.tab_panel('Download').style("width: 100%;"):
+                download_page(client)
 
 def update_preview():
     global html_preview
     while True:
-        img_data = obs_controller.get_screenshot()
-        html_preview = f"<img src=\"{img_data}\" width=\"512\" style=\"max-width: 100%;\" />"
+        try:
+            img_data = obs_controller.get_screenshot()
+            if img_data is None:
+                html_preview = "<p>Keine Verbindung zu OBS</p>"
+            else:
+                html_preview = f"<img src=\"{img_data}\" width=\"512\" style=\"max-width: 100%;\" />"
+        except Exception as e:
+            print(e)
         time.sleep(.5)
 
 t = threading.Thread(target=update_preview)
