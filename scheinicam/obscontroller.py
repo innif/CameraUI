@@ -1,5 +1,6 @@
 import obsws_python as obs
 import time
+from datetime import datetime
 
 HOST = "localhost"
 PORT = 4455
@@ -10,24 +11,37 @@ class ObsController:
         '''Initialize ObsController'''
         self.client = obs.ReqClient(host=host, port=port, password=password)
         status = self.client.get_record_status()
-        self.state = "recording" if status.output_active else "ready"
+        self.recording = status.output_active
+        self.preview = ""
+        self.filename = ""
+
+    def _generate_filename(self, name):
+        '''Generate filename'''
+        now = datetime.now()
+        output = now.strftime("%y-%m-%d_%H-%M-%S")
+        return f"{name}_{output}"
 
     def record(self, name):
         '''Start recording with given name'''
-        if self.state == "recording": 
+        if self.recording: 
             return # Recording already running
-        self.client.set_profile_parameter("Output", "FilenameFormatting", f"{name}_%CCYY-%MM-%DD_%hh-%mm-%ss")
+        filename = self._generate_filename(name)
+        self.client.set_profile_parameter("Output", "FilenameFormatting", filename)
         self.client.start_record()
-        self.state = "recording"
+        self.recording = True
 
     def stop(self):
         '''Stop recording'''
-        if self.state == "ready":
+        if not self.recording:
             return # No recording running
-        out = self.client.get_record_directory().record_directory
-        print(out)
         self.client.stop_record()
-        self.state = "ready"
+        self.recording = False
+        self.filename = ""
+
+    def get_screenshot(self):
+        '''Get screenshot'''
+        out = self.client.get_source_screenshot(name="main", img_format="jpg", width=512, height=288, quality=50)
+        return out.image_data
 
     def __del__(self):
         '''Destructor'''
