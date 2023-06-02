@@ -74,6 +74,26 @@ class ObsController:
             self.connected = False
             raise Exception("Error getting screenshot")
         return out.image_data
+    
+    def mute_video(self):
+        '''mute video by switching to scene "muted"'''
+        if not self.connected:
+            return
+        try:
+            self.client.set_current_program_scene("muted")
+        except:
+            self.connected = False
+            raise Exception("Error muting video")
+        
+    def unmute_video(self):
+        '''unmute video by switching to scene back to "main"'''
+        if not self.connected:
+            return
+        try:
+            self.client.set_current_program_scene("main")
+        except:
+            self.connected = False
+            raise Exception("Error unmuting video")
 
     def __del__(self):
         '''Destructor'''

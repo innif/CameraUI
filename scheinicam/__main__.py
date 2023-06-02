@@ -113,6 +113,14 @@ def index(client: Client):
             with ui.tab_panel('Download').style("width: 100%;"):
                 download_page(client)
 
+# add admin page
+@ui.page("/admin")
+def admin(client: Client):
+    # Add Button to Mute and Unmute Recording
+    with ui.row().style("margin-top: 1em;").bind_visibility_from(obs_controller, 'connected'):
+        ui.button('Aufnahme stumm schalten', color="red", on_click=obs_controller.mute_video)
+        ui.button('Aufnahme wieder einschalten', color="blue", on_click=obs_controller.unmute_video)
+
 def update_preview():
     global html_preview
     while True:
