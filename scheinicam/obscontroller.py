@@ -32,14 +32,14 @@ class ObsController:
         except:
             self.connected = False
 
-    def record(self, name, ip): # TODO: Error handling
+    def record(self): # TODO: Error handling
         '''
         Start recording with given name
         '''
         if self.recording: 
-            return # Recording already running
+            return None# Recording already running
         try:
-            self.file = VideoFile(name, ip=ip)
+            self.file = VideoFile()
         except:
             raise Exception("Error creating VideoFile")
         try:
@@ -50,18 +50,19 @@ class ObsController:
             self.connected = False
             print(e)
             raise Exception("Error starting recording")
+        return self.file
 
     def stop(self): # TODO: Error handling
         '''Stop recording'''
         if not self.recording:
-            return # No recording running
+            return None# No recording running
         try:
             self.client.stop_record()
         except:
             self.connected = False
             raise Exception("Error stopping recording")
-        self.file.set_end_time()
         self.recording = False
+        print("Recording stopped")
         return self.file
 
     def get_screenshot(self):
@@ -70,10 +71,11 @@ class ObsController:
             return None
         try:
             out = self.client.get_source_screenshot(name="main", img_format="jpg", width=512, height=288, quality=50)
+            return out.image_data
         except:
             self.connected = False
             raise Exception("Error getting screenshot")
-        return out.image_data
+        return None
     
     def mute_video(self):
         '''mute video by switching to scene "muted"'''
