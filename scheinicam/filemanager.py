@@ -7,6 +7,7 @@ from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 from PIL import Image
 from io import BytesIO
 import base64
+import logging
 
 class VideoFile:
     def __init__(self, start_time=None, filename=None, end_time = None):
@@ -15,7 +16,7 @@ class VideoFile:
         self.start_time = start_time
         if filename is None:
             self._generate_filename()
-            print("new file: ", self.filename)
+            logging.info(f"new file: {self.filename}")
         else:
             self.filename = filename
         self.clip = None
@@ -55,7 +56,7 @@ class VideoFile:
         end_seconds = (end - self.start_time).total_seconds()
         if end_seconds < start_seconds or start_seconds < 0 or end_seconds > self.clip.duration:
             raise Exception("Invalid time range")
-        print(f"start: {start_seconds}, end: {end_seconds}")
+        logging.info(f"subclip in range start: {start_seconds}, end: {end_seconds}")
         output_path = f"videos/subclip_{self.filename}-{start_seconds}-{end_seconds}.mp4"
         ffmpeg_extract_subclip(f"videos/{self.filename}.mp4", start_seconds, end_seconds, targetname=output_path)
         return output_path
@@ -79,8 +80,9 @@ class VideoFile:
         try:
             self.clip = mp.VideoFileClip(f"videos/{self.filename}.mp4")
         except Exception as e:
-            print("Could not load video clip")
-        print("Video clip generated")
+            logging.exception(e)
+            logging.error("Could not load video clip")
+        logging.info("Video clip generated")
 
     def get_descriptor(self):
         '''Get descriptor'''
@@ -132,7 +134,8 @@ class Filemanager:
             file = VideoFile(start_time=start_time, end_time=end_time, filename=data["filename"])
             return file
         except Exception as e:
-            print(f"Could not load file {filename}: {e}")
+            logging.exception(e)
+            logging.error(f"Could not load file {filename}")
             return None
 
     def get_file_dict(self):
@@ -150,17 +153,20 @@ class Filemanager:
         try:
             self.files.remove(file)
         except Exception as e:
-            print(f"Could not remove file {file}: {e}")
+            logging.exception(e)
+            logging.error(f"Could not remove file {file}")
         try:
             os.remove(f"videos/{file.filename}.mp4")
             os.remove(f"videos/{file.filename}.json")
         except Exception as e:
-            print(f"Could not remove file {file}: {e}")
+            logging.exception(e)
+            logging.error(f"Could not remove file {file}")
 
     def delete_files_older_than(self, age: datetime.timedelta):
         '''Delete files older than age'''
         for file in self.files:
             if file.start_time < datetime.datetime.now() - age:
+                logging.info(f"Deleting file {file}")
                 self.delete_file(file)
 
     def delete_subclips(self):
@@ -168,9 +174,11 @@ class Filemanager:
         for filename in os.listdir("videos"):
             if filename.startswith("subclip_"):
                 try:
+                    logging.info(f"Deleting subclip {filename}")
                     os.remove(f"videos/{filename}")
                 except Exception as e:
-                    print(f"Could not remove file {filename}: {e}")
+                    logging.exception(e)
+                    logging.error(f"Could not remove file {filename}")
     
 class FileContainer:
     def __init__(self, file: VideoFile):

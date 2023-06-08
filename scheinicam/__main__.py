@@ -5,11 +5,13 @@ import time
 import threading
 from filemanager import VideoFile, Filemanager, FileContainer
 import datetime
+import logging
 
 #TODO: direkt herunterladen nach aufnahme beenden anbieten
 #TODO: Löschen von Aufnahmen
 #TODO: Admin-Seite
 
+logging.basicConfig(filename=f'logs/log{datetime.datetime.now().strftime("%y-%m-%d--%H-%M-%S")}.log', encoding='utf-8', level=logging.INFO)
 
 html_preview = ""
 status_text = "Bereit"
@@ -31,25 +33,34 @@ def set_time_marker():
 def start_record():
     global status_text
     if not obs_controller.connected or obs_controller.recording:
+        logging.warning("Could not start recording because OBS is not connected or already recording")
         return
     try:
         file = obs_controller.record()
         if file is None:
+            logging.error("Could not start recording because file is None")
             return
         filemanager.add_file(file)
         file.export_as_json()
         status_text = "Aufnahme läuft"
+        logging.info(f"Started recording {file.filename}")
     except Exception as e:
+        logging.exception(e)
+        logging.error(f"Could not start recording")
         return
 
 def stop_record():
     global status_text
     if not obs_controller.connected or not obs_controller.recording:
+        logging.warning("Could not stop recording because OBS is not connected or not recording")
         return
     try:
         obs_controller.stop()
         obs_controller.file.stop_recording()
+        logging.info(f"Stopped recording {obs_controller.file.filename}")
     except Exception as e:
+        logging.exception(e)
+        logging.error(f"Could not stop recording")
         return
     status_text = "Bereit"
 
@@ -94,6 +105,7 @@ def download_dialog(file, from_time_dict, to_time_dict):
     to_time = time_dict_to_time(to_time_dict)
     dialog = ui.dialog()
     try:
+        logging.info(f"Download Dialog for {file.filename} from {from_time_dict} to {to_time_dict}")
         dialog.open()
         with dialog, ui.card():
             ui.label(f"Video herunterladen von {from_time.strftime('%H:%M')} bis {to_time.strftime('%H:%M')}")
@@ -105,7 +117,8 @@ def download_dialog(file, from_time_dict, to_time_dict):
             waiting.set_visibility(False)
             ui.button("Herunterladen", on_click=lambda: ui.download(path, "video.mp4"))
     except Exception as e:
-        print(e)
+        logging.exception(e)
+        logging.error(f"Could not export video")
         ui.notify("Fehler beim Exportieren des Videos")
         dialog.close()
 
@@ -189,7 +202,8 @@ def update_preview():
             else:
                 html_preview = f"<img src=\"{img_data}\" width=\"100%\"/>"
         except Exception as e:
-            print(e)
+            logging.exception(e)
+            logging.error(f"Could not update preview")
         time.sleep(.5)
 
 t = threading.Thread(target=update_preview)
@@ -202,10 +216,11 @@ def auto_record():
     now = datetime.datetime.now().time()
     if now > start_time and now < end_time:
         if not obs_controller.recording:
+            logging.info("Starting recording")
             start_record()
-            print("started recording")
     else:
         if obs_controller.recording:
+            logging.info("Stopping recording")
             stop_record()
 
 

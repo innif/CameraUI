@@ -2,6 +2,7 @@ import obsws_python as obs
 import time
 from filemanager import VideoFile
 import threading
+import logging
 
 HOST = "localhost"
 PORT = 4455
@@ -48,7 +49,8 @@ class ObsController:
             self.recording = True
         except Exception as e:
             self.connected = False
-            print(e)
+            logging.exception(e)
+            logging.error("Error starting recording")
             raise Exception("Error starting recording")
         return self.file
 
@@ -58,11 +60,13 @@ class ObsController:
             return None# No recording running
         try:
             self.client.stop_record()
-        except:
+        except Exception as e:
             self.connected = False
+            logging.exception(e)
+            logging.error("Error stopping recording")
             raise Exception("Error stopping recording")
         self.recording = False
-        print("Recording stopped")
+        logging.info("Recording stopped")
         return self.file
 
     def get_screenshot(self):
@@ -72,10 +76,11 @@ class ObsController:
         try:
             out = self.client.get_source_screenshot(name="main", img_format="jpg", width=512, height=288, quality=50)
             return out.image_data
-        except:
+        except Exception as e:
             self.connected = False
+            logging.exception(e)
+            logging.error("Error getting screenshot")
             raise Exception("Error getting screenshot")
-        return None
     
     def mute_video(self):
         '''mute video by switching to scene "muted"'''
@@ -83,8 +88,10 @@ class ObsController:
             return
         try:
             self.client.set_current_program_scene("muted")
-        except:
+        except Exception as e:
             self.connected = False
+            logging.exception(e)
+            logging.error("Error muting video")
             raise Exception("Error muting video")
         
     def unmute_video(self):
@@ -93,8 +100,10 @@ class ObsController:
             return
         try:
             self.client.set_current_program_scene("main")
-        except:
+        except Exception as e:
             self.connected = False
+            logging.exception(e)
+            logging.error("Error unmuting video")
             raise Exception("Error unmuting video")
         
     def reload_camera(self):
@@ -104,11 +113,12 @@ class ObsController:
         try:
             settings = self.client.get_input_settings("Camera")
             settings.input_settings["active"] = False
-            print("disabling camera")
-            self.client.set_input_settings("Camera", {"disable": True}, True) # TODO not working :(
-            print("done")
-        except:
+            logging.info("disabling camera")
+            self.client.set_input_settings("Camera", {"disable": True}, True)
+        except Exception as e:
             self.connected = False
+            logging.exception(e)
+            logging.error("Error disabling camera")
             raise Exception("Error disabling camera")
         
 
