@@ -9,7 +9,7 @@ from io import BytesIO
 import base64
 
 class VideoFile:
-    def __init__(self, start_time=None, filename=None):
+    def __init__(self, start_time=None, filename=None, end_time = None):
         if start_time is None:
             start_time = datetime.datetime.now()
         self.start_time = start_time
@@ -19,6 +19,7 @@ class VideoFile:
         else:
             self.filename = filename
         self.clip = None
+        self.end_time = end_time
 
     def _generate_filename(self):
         ''' Generate filename '''
@@ -39,6 +40,7 @@ class VideoFile:
         '''Export as json'''
         data = {
             "start_time": self.start_time.isoformat(),
+            "end_time": self.end_time.isoformat() if self.end_time is not None else None,
             "filename": self.filename,
         }
         json.dump(data, open(f"videos/{self.filename}.json", "w"))
@@ -54,7 +56,7 @@ class VideoFile:
         if end_seconds < start_seconds or start_seconds < 0 or end_seconds > self.clip.duration:
             raise Exception("Invalid time range")
         print(f"start: {start_seconds}, end: {end_seconds}")
-        output_path = f"videos/{self.filename}-{start_seconds}-{end_seconds}.mp4"
+        output_path = f"videos/subclip_{self.filename}-{start_seconds}-{end_seconds}.mp4"
         ffmpeg_extract_subclip(f"videos/{self.filename}.mp4", start_seconds, end_seconds, targetname=output_path)
         return output_path
     
@@ -78,11 +80,30 @@ class VideoFile:
             self.clip = mp.VideoFileClip(f"videos/{self.filename}.mp4")
         except Exception as e:
             print("Could not load video clip")
+        print("Video clip generated")
 
     def get_descriptor(self):
         '''Get descriptor'''
-        return self.start_time.strftime("%d.%m.%Y") #TODO: Add more information
+        if self.end_time is None:
+            return "{} von {}, laufend".format(
+                self.start_time.strftime("%d.%m.%Y"),
+                self.start_time.strftime("%H:%M Uhr"))
 
+        return "{} von {} bis {}".format(
+            self.start_time.strftime("%d.%m.%Y"), 
+            self.start_time.strftime("%H:%M Uhr"),
+            self.end_time.strftime("%H:%M Uhr")) #TODO: Add more information
+    
+    def stop_recording(self):
+        '''Stop recording'''
+        self.end_time = datetime.datetime.now()
+        self.export_as_json()
+
+    def get_end_time(self):
+        '''Get end time'''
+        if self.end_time is None:
+            return datetime.datetime.now()
+        return self.end_time
 
 class Filemanager:
     def __init__(self):
@@ -98,15 +119,64 @@ class Filemanager:
         '''scan for json files and add them to the list'''
         for filename in os.listdir("videos"):
             if filename.endswith(".json"):
-                self.files.append(self.file_from_json(f"videos/{filename}"))
+                file = self.file_from_json(f"videos/{filename}")
+                if file is not None:
+                    self.files.append(file)
 
     def file_from_json(self, filename):
         '''Create file from json'''
-        data = json.load(open(filename, "r"))
-        start_time = datetime.datetime.fromisoformat(data["start_time"])
-        file = VideoFile(start_time, data["filename"])
-        return file
+        try:
+            data = json.load(open(filename, "r"))
+            start_time = datetime.datetime.fromisoformat(data["start_time"])
+            end_time = None if data["end_time"] is None else datetime.datetime.fromisoformat(data["end_time"])
+            file = VideoFile(start_time=start_time, end_time=end_time, filename=data["filename"])
+            return file
+        except Exception as e:
+            print(f"Could not load file {filename}: {e}")
+            return None
 
     def get_file_dict(self):
         '''Get file dict'''
         return {file: file.get_descriptor() for file in self.files}
+    
+    def newest_file(self):
+        '''Get newest file'''
+        if len(self.files) == 0:
+            return None
+        return max(self.files, key=lambda file: file.start_time)
+    
+    def delete_file(self, file: VideoFile):
+        '''Delete file'''
+        try:
+            self.files.remove(file)
+        except Exception as e:
+            print(f"Could not remove file {file}: {e}")
+        try:
+            os.remove(f"videos/{file.filename}.mp4")
+            os.remove(f"videos/{file.filename}.json")
+        except Exception as e:
+            print(f"Could not remove file {file}: {e}")
+
+    def delete_files_older_than(self, age: datetime.timedelta):
+        '''Delete files older than age'''
+        for file in self.files:
+            if file.start_time < datetime.datetime.now() - age:
+                self.delete_file(file)
+
+    def delete_subclips(self):
+        '''Delete subclips'''
+        for filename in os.listdir("videos"):
+            if filename.startswith("subclip_"):
+                try:
+                    os.remove(f"videos/{filename}")
+                except Exception as e:
+                    print(f"Could not remove file {filename}: {e}")
+    
+class FileContainer:
+    def __init__(self, file: VideoFile):
+        '''Initialize FileContainer'''
+        self.file = file
+
+    def get_file(self):
+        '''Get file'''
+        return self.file

@@ -3,12 +3,13 @@ from nicegui.events import ValueChangeEventArguments
 from obscontroller import ObsController
 import time
 import threading
-from filemanager import VideoFile, Filemanager
+from filemanager import VideoFile, Filemanager, FileContainer
 import datetime
 
 #TODO: direkt herunterladen nach aufnahme beenden anbieten
 #TODO: Löschen von Aufnahmen
 #TODO: Admin-Seite
+
 
 html_preview = ""
 status_text = "Bereit"
@@ -17,8 +18,9 @@ obs_controller = ObsController()
 filemanager = Filemanager()
 
 WIDTH = "50em"
-start_time = datetime.time(1, 43, 0)
-end_time = datetime.time(6, 44, 0)
+start_time = datetime.time(1, 45, 0)
+end_time = datetime.time(1, 50, 0)
+delete_age = datetime.timedelta(days=7)
 
 app.add_static_files('/videos', 'videos')
 app.add_static_files('/assets', 'assets')
@@ -28,7 +30,7 @@ def set_time_marker():
 
 def start_record():
     global status_text
-    if obs_controller.recording:
+    if not obs_controller.connected or obs_controller.recording:
         return
     try:
         file = obs_controller.record()
@@ -42,10 +44,11 @@ def start_record():
 
 def stop_record():
     global status_text
-    if not obs_controller.recording:
+    if not obs_controller.connected or not obs_controller.recording:
         return
     try:
         obs_controller.stop()
+        obs_controller.file.stop_recording()
     except Exception as e:
         return
     status_text = "Bereit"
@@ -90,43 +93,69 @@ def download_dialog(file, from_time_dict, to_time_dict):
     from_time = time_dict_to_time(from_time_dict)
     to_time = time_dict_to_time(to_time_dict)
     dialog = ui.dialog()
-    dialog.open()
-    ui.image()
-    with dialog, ui.card():
-        ui.label(f"Video herunterladen von {from_time.strftime('%H:%M')} bis {to_time.strftime('%H:%M')}")
-        waiting = ui.row().style("align-items: center")
-        with waiting:
-            ui.spinner()
-            ui.label("Video wird exportiert...")
-        path = obs_controller.file.get_subclip(from_time, to_time)
-        waiting.set_visibility(False)
-        ui.button("Herunterladen", on_click=lambda: ui.download(path, "video.mp4"))
+    try:
+        dialog.open()
+        with dialog, ui.card():
+            ui.label(f"Video herunterladen von {from_time.strftime('%H:%M')} bis {to_time.strftime('%H:%M')}")
+            waiting = ui.row().style("align-items: center")
+            with waiting:
+                ui.spinner()
+                ui.label("Video wird exportiert...")
+            path = file.get_subclip(from_time, to_time)
+            waiting.set_visibility(False)
+            ui.button("Herunterladen", on_click=lambda: ui.download(path, "video.mp4"))
+    except Exception as e:
+        print(e)
+        ui.notify("Fehler beim Exportieren des Videos")
+        dialog.close()
 
 def download_page(client: Client):
     # setup ui elements to specify start and endtime for video crop
+    filecontainer = FileContainer(filemanager.newest_file())
+    def new_file_selected(event: ValueChangeEventArguments):
+        set_start_time(filecontainer.get_file().start_time + datetime.timedelta(seconds=2))
+        set_end_time(filecontainer.get_file().get_end_time() - datetime.timedelta(seconds=2))
     with ui.card().style("margin-bottom: 1em;"):
-        ui.select(filemanager.get_file_dict()).classes("w-full")
+        ui.select(filemanager.get_file_dict(), value=filecontainer.get_file(), on_change=new_file_selected).classes("w-full").bind_value(filecontainer, "file")
 
     def time_selector(label, time):
         with ui.card().tight().style("min-width: 100%;"):
             time = {"hour": time.hour, "minute": time.minute, "second": time.second}
             img = ui.image("") #TODO: replace with preview image
-            def update_img(value):
-                if obs_controller.file is not None:
-                    img.set_source(obs_controller.file.get_frame_at(time_dict_to_time(time)))
-            ui.button("Vorschau", on_click=update_img)
+            label = None
+            with ui.card_section():
+                label = ui.label("Vorschau nicht möglich")
+            def update_img(value = None):
+                f = filecontainer.get_file()
+                img_available = False
+                if f is not None:
+                    frame = f.get_frame_at(time_dict_to_time(time))
+                    img.set_source(frame)
+                    img_available = frame is not None
+                label.set_visibility(not img_available)
+                img.set_visibility(img_available)
             with ui.card_section(), ui.row():
-                ui.number(label="Stunde", min = start_time.hour, max=end_time.hour, format="%02d", on_change=update_img).bind_value(time, "hour", forward=lambda x: int(x))
-                ui.number(label="Minute", min = 0, max=59, format="%02d", on_change=update_img).bind_value(time, "minute", forward=lambda x: int(x))
-                ui.number(label="Sekunde", min = 0, max=59, format="%02d", on_change=update_img).bind_value(time, "second", forward=lambda x: int(x))
+                num_h = ui.number(label="Stunde", min = 0, max=23, format="%02d", on_change=update_img)\
+                    .bind_value(time, "hour", forward=lambda x: int(x))
+                num_min = ui.number(label="Minute", min = 0, max=59, format="%02d", on_change=update_img)\
+                    .bind_value(time, "minute", forward=lambda x: int(x))
+                num_s = ui.number(label="Sekunde", min = 0, max=59, format="%02d", on_change=update_img)\
+                    .bind_value(time, "second", forward=lambda x: int(x))
+            def set_time(new_time: datetime.time):
+                time["hour"] = new_time.hour
+                time["minute"] = new_time.minute
+                time["second"] = new_time.second
+                threading.Thread(target=update_img).start()
+            update_img()
             # with ui.card_section(), ui.row(): #TODO: add buttons to change time
             #     ui.button("-30s")   
             #     ui.button("+30s")   
-            return time
-    with ui.row().classes("w-full").style("margin-bottom: 1em;"):
-        start = time_selector("Startzeit", start_time)
-        end = time_selector("Endzeit", end_time)
-    ui.button("Herunterladen", on_click=lambda: download_dialog(obs_controller.file, start, end))
+            return time, set_time
+    time_select_row = ui.row().classes("w-full").style("margin-bottom: 1em;")
+    with time_select_row:
+        start, set_start_time = time_selector("Startzeit", filecontainer.get_file().start_time + datetime.timedelta(seconds=2))
+        end, set_end_time = time_selector("Endzeit", filecontainer.get_file().get_end_time() - datetime.timedelta(seconds=2))
+    ui.button("Herunterladen", on_click=lambda: download_dialog(filecontainer.get_file(), start, end))
               
 @ui.page("/")
 def index(client: Client):
@@ -148,9 +177,7 @@ def admin(client: Client):
     with ui.row().style("margin-top: 1em;").bind_visibility_from(obs_controller, 'connected'):
         ui.button('Aufnahme stumm schalten', color="red", on_click=obs_controller.mute_video)
         ui.button('Aufnahme wieder einschalten', color="blue", on_click=obs_controller.unmute_video)
-    with ui.row().style("margin-top: 1em;").bind_visibility_from(obs_controller, 'connected'):
-        ui.button('Aufnahme starten', color="red", on_click=start_record)
-        ui.button('Aufnahme stoppen', color="blue", on_click=stop_record)
+    # TODO Add options for start and end time
 
 def update_preview():
     global html_preview
@@ -171,7 +198,6 @@ t.start()
 # create a thread that automatically starts and stops the recording at the specified times
 def auto_record():
     if not obs_controller.connected:
-        time.sleep(1)
         return
     now = datetime.datetime.now().time()
     if now > start_time and now < end_time:
@@ -182,5 +208,8 @@ def auto_record():
         if obs_controller.recording:
             stop_record()
 
+
+filemanager.delete_files_older_than(delete_age)
+filemanager.delete_subclips()
 ui.timer(1, auto_record)
 ui.run(title="ScheiniCam")

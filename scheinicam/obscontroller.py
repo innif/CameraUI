@@ -96,6 +96,21 @@ class ObsController:
         except:
             self.connected = False
             raise Exception("Error unmuting video")
+        
+    def reload_camera(self):
+        '''reloading camera by disabling and re-enabling camera source'''
+        if not self.connected:
+            return
+        try:
+            settings = self.client.get_input_settings("Camera")
+            settings.input_settings["active"] = False
+            print("disabling camera")
+            self.client.set_input_settings("Camera", {"disable": True}, True) # TODO not working :(
+            print("done")
+        except:
+            self.connected = False
+            raise Exception("Error disabling camera")
+        
 
     def __del__(self):
         '''Destructor'''
@@ -104,4 +119,5 @@ class ObsController:
 if __name__ == "__main__":
     obs_controller = ObsController()
     time.sleep(5)
-    obs_controller.stop()
+    obs_controller.reload_camera()
+    exit()
