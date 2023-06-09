@@ -106,6 +106,12 @@ class VideoFile:
         if self.end_time is None:
             return datetime.datetime.now()
         return self.end_time
+    
+    def calculate_end_time(self):
+        '''Calculate end time based on length of video clip'''
+        if self.clip is None:
+            self.generate_video_clip()
+        self.end_time = self.start_time + datetime.timedelta(seconds=self.clip.duration)
 
 class Filemanager:
     def __init__(self):
@@ -122,8 +128,11 @@ class Filemanager:
         for filename in os.listdir("videos"):
             if filename.endswith(".json"):
                 file = self.file_from_json(f"videos/{filename}")
-                if file is not None:
-                    self.files.append(file)
+                if file is None:
+                    continue
+                if file.end_time is None:
+                    file.calculate_end_time()
+                self.files.append(file)
 
     def file_from_json(self, filename):
         '''Create file from json'''
