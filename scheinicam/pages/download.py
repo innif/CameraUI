@@ -6,8 +6,9 @@ import util
 from filemanager import VideoFile, Filemanager, FileContainer
 import threading
 import datetime
+import asyncio
 
-def download_dialog(file, from_time_dict, to_time_dict):
+async def download_dialog(file, from_time_dict, to_time_dict):
     '''Creates a download dialog for a video file'''
     from_time = util.time_dict_to_time(from_time_dict)
     to_time = util.time_dict_to_time(to_time_dict)
@@ -21,7 +22,7 @@ def download_dialog(file, from_time_dict, to_time_dict):
             with waiting:
                 ui.spinner()
                 ui.label("Video wird exportiert...")
-            time.sleep(10)
+            await asyncio.sleep(0.1)
             path = file.get_subclip(from_time, to_time)
             waiting.set_visibility(False)
             ui.button("Herunterladen", on_click=lambda: ui.download(path, "video.mp4"))
@@ -83,4 +84,6 @@ def download_page(client: Client, filemanager: Filemanager):
     with time_select_row:
         start, set_start_time = time_selector("Startzeit", filecontainer.get_file().start_time + datetime.timedelta(seconds=2), filecontainer)
         end, set_end_time = time_selector("Endzeit", filecontainer.get_file().get_end_time() - datetime.timedelta(seconds=2), filecontainer)
-    ui.button("Herunterladen", on_click=lambda: download_dialog(filecontainer.get_file(), start, end))
+    async def dialog():
+        await download_dialog(filecontainer.get_file(), start, end)
+    ui.button("Herunterladen", on_click=dialog)
