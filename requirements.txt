@@ -1,4 +1,3 @@
 nicegui==1.2.14
-obs-websocket-py==1.5.2
-visca_over_ip
-onvif-py3
+obsws_python
+moviepy
