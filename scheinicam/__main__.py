@@ -6,6 +6,7 @@ import threading
 from filemanager import VideoFile, Filemanager, FileContainer
 import datetime
 import logging
+import os
 
 #TODO: direkt herunterladen nach aufnahme beenden anbieten
 #TODO: Löschen von Aufnahmen
@@ -125,6 +126,10 @@ def download_dialog(file, from_time_dict, to_time_dict):
 def download_page(client: Client):
     # setup ui elements to specify start and endtime for video crop
     filecontainer = FileContainer(filemanager.newest_file())
+    if filecontainer.get_file() is None:
+        with ui.card():
+            ui.label("Keine Aufnahmen vorhanden")
+        return
     def new_file_selected(event: ValueChangeEventArguments):
         set_start_time(filecontainer.get_file().start_time + datetime.timedelta(seconds=2))
         set_end_time(filecontainer.get_file().get_end_time() - datetime.timedelta(seconds=2))
@@ -190,6 +195,7 @@ def admin(client: Client):
     with ui.row().style("margin-top: 1em;").bind_visibility_from(obs_controller, 'connected'):
         ui.button('Aufnahme stumm schalten', color="red", on_click=obs_controller.mute_video)
         ui.button('Aufnahme wieder einschalten', color="blue", on_click=obs_controller.unmute_video)
+    ui.button("Computer herunterfahren", color="red", on_click=lambda: os.system("shutdown /s /t 1"))
     # TODO Add options for start and end time
 
 def update_preview():
@@ -227,4 +233,4 @@ def auto_record():
 filemanager.delete_files_older_than(delete_age)
 filemanager.delete_subclips()
 ui.timer(1, auto_record)
-ui.run(title="ScheiniCam")
+ui.run(title="ScheiniCam", show=False)
