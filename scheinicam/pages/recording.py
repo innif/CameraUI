@@ -26,7 +26,7 @@ def recording_page(client: Client, obs_controller: ObsController, settings: Sett
         preview.bind_content_from(ui_object_container, 'html_preview')
         with ui.card_section():
             with ui.row().style('align-items: center'):
-                ui.button('Zeitmarker setzen', on_click=set_time_marker)
+                #ui.button('Zeitmarker setzen', on_click=set_time_marker)
                 ui.spinner('pie', size='1em', color='red')
                 ui.badge('Aufnahme läuft', color="red")
     recording_card.bind_visibility_from(obs_controller, 'recording')

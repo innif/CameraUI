@@ -51,11 +51,14 @@ def time_selector(label, time, filecontainer: FileContainer):
             img.set_visibility(img_available)
         with ui.card_section(), ui.row():
             num_h = ui.number(label="Stunde", min = 0, max=23, format="%02d", on_change=update_img)\
-                .bind_value(time, "hour", forward=lambda x: int(x))
+                .bind_value(time, "hour", forward=lambda x: int(x))\
+                .style("width: 30%; max-width: 10em;")
             num_min = ui.number(label="Minute", min = 0, max=59, format="%02d", on_change=update_img)\
-                .bind_value(time, "minute", forward=lambda x: int(x))
+                .bind_value(time, "minute", forward=lambda x: int(x))\
+                .style("width: 30%; max-width: 10em;")
             num_s = ui.number(label="Sekunde", min = 0, max=59, format="%02d", on_change=update_img)\
-                .bind_value(time, "second", forward=lambda x: int(x))
+                .bind_value(time, "second", forward=lambda x: int(x))\
+                .style("width: 30%; max-width: 10em;")
         def set_time(new_time: datetime.time):
             time["hour"] = new_time.hour
             time["minute"] = new_time.minute
