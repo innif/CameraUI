@@ -39,6 +39,6 @@ class Settings:
 
     def set_default_values(self):
         '''Set default values'''
-        self.start_time = datetime.time(19, 55, 0)
-        self.end_time = datetime.time(22, 55, 0)
+        self.start_time = datetime.time(1, 55, 0)
+        self.end_time = datetime.time(4, 55, 0)
         self.delete_age = datetime.timedelta(days=7)

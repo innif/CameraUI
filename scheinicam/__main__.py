@@ -10,7 +10,7 @@ from settings import Settings
 from ui_object_container import UiObjectContainer
 from recording_controller import RecordingController
 
-from pages.download import download_page
+from pages.download import download_page3 as download_page
 from pages.admin import admin_page
 from pages.recording import recording_page
 
