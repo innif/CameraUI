@@ -62,19 +62,24 @@ class VideoFile:
         return output_path
     
     def get_frame_at(self, time: datetime.time):
-        if self.clip is None:
-            self.generate_video_clip()
-        timestamp = datetime.datetime.combine(self.start_time.date(), time)
-        timestamp_seconds = (timestamp - self.start_time).total_seconds()
-        if self.clip is None or timestamp_seconds < 0 or timestamp_seconds > self.clip.duration:
-            return None
-        frame = self.clip.get_frame(timestamp_seconds)
-        # convert to frame base64 with jpg encoding
-        img = Image.fromarray(frame, 'RGB')
-        buff = BytesIO()
-        img.save(buff, format="JPEG")
-        img_string = base64.b64encode(buff.getvalue()).decode("utf-8")
-        return f"data:image/jpg;base64,{img_string}" 
+        try:
+            if self.clip is None:
+                self.generate_video_clip()
+            timestamp = datetime.datetime.combine(self.start_time.date(), time)
+            timestamp_seconds = (timestamp - self.start_time).total_seconds()
+            if self.clip is None or timestamp_seconds < 0 or timestamp_seconds > self.clip.duration:
+                return None
+            frame = self.clip.get_frame(timestamp_seconds)
+            # convert to frame base64 with jpg encoding
+            img = Image.fromarray(frame, 'RGB')
+            buff = BytesIO()
+            img.save(buff, format="JPEG")
+            img_string = base64.b64encode(buff.getvalue()).decode("utf-8")
+            return f"data:image/jpg;base64,{img_string}" 
+        except Exception as e:
+            logging.exception(e)
+            logging.error("Could not load frame at time")
+            return ""
     
     def generate_video_clip(self):
         try:
