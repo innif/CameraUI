@@ -58,65 +58,6 @@ async def download_dialog(file, from_time: datetime.time, to_time: datetime.time
         ui.notify("Fehler beim Exportieren des Videos")
         dialog.close()
 
-def time_selector(label, time, filecontainer: FileContainer):
-    '''Creates a time selector ui-elements with a preview image'''
-    with ui.card().tight().style("min-width: 100%;"):
-        time = {"hour": time.hour, "minute": time.minute, "second": time.second}
-        img = ui.image("")
-        label = None
-        with ui.card_section():
-            label = ui.label("Vorschau nicht möglich")
-        def update_img(value = None):
-            f = filecontainer.get_file()
-            img_available = False
-            if f is not None:
-                frame = f.get_frame_at(util.time_dict_to_time(time))
-                img.set_source(frame)
-                img_available = frame is not None
-            label.set_visibility(not img_available)
-            img.set_visibility(img_available)
-        with ui.card_section(), ui.row():
-            num_h = ui.number(label="Stunde", min = 0, max=23, format="%02d", on_change=update_img)\
-                .bind_value(time, "hour", forward=lambda x: int(x))\
-                .style("width: 30%; max-width: 10em;")
-            num_min = ui.number(label="Minute", min = 0, max=59, format="%02d", on_change=update_img)\
-                .bind_value(time, "minute", forward=lambda x: int(x))\
-                .style("width: 30%; max-width: 10em;")
-            num_s = ui.number(label="Sekunde", min = 0, max=59, format="%02d", on_change=update_img)\
-                .bind_value(time, "second", forward=lambda x: int(x))\
-                .style("width: 30%; max-width: 10em;")
-        def set_time(new_time: datetime.time):
-            time["hour"] = new_time.hour
-            time["minute"] = new_time.minute
-            time["second"] = new_time.second
-            threading.Thread(target=update_img).start()
-        update_img()
-        # with ui.card_section(), ui.row(): #TODO: add buttons to change time
-        #     ui.button("-30s")   
-        #     ui.button("+30s")   
-        return time, set_time
-
-def download_page(client: Client, filemanager: Filemanager):
-    '''Creates the download page'''
-    # setup ui elements to specify start and endtime for video crop
-    filecontainer = FileContainer(filemanager.newest_file())
-    if filecontainer.get_file() is None:
-        with ui.card():
-            ui.label("Keine Aufnahmen vorhanden")
-        return
-    def new_file_selected(event: ValueChangeEventArguments):
-        set_start_time(filecontainer.get_file().start_time + datetime.timedelta(seconds=2))
-        set_end_time(filecontainer.get_file().get_end_time() - datetime.timedelta(seconds=2))
-    with ui.card().style("margin-bottom: 1em;"):
-        ui.select(filemanager.get_file_dict(), value=filecontainer.get_file(), on_change=new_file_selected).classes("w-full").bind_value(filecontainer, "file")
-    time_select_row = ui.row().classes("w-full").style("margin-bottom: 1em;")
-    with time_select_row:
-        start, set_start_time = time_selector("Startzeit", filecontainer.get_file().start_time + datetime.timedelta(seconds=2), filecontainer)
-        end, set_end_time = time_selector("Endzeit", filecontainer.get_file().get_end_time() - datetime.timedelta(seconds=2), filecontainer)
-    async def dialog():
-        await download_dialog(filecontainer.get_file(), start, end)
-    ui.button("Herunterladen", on_click=dialog)
-
 def preview(container: TimeSelectContainer):
     img = ui.image("")
     ui.button("Vorschau Aktualisieren", on_click=lambda: update_img()).style("margin-top: 1em; margin-left: 1em; margin-right: 1em;")
@@ -176,6 +117,8 @@ def time_selector3(container: TimeSelectContainer):
                 badge = ui.badge('0', color='red').props('floating').style('position: relative; left: 50%; top: 0%; transform: translate(-50%, 0%);')\
                     .bind_text_from(container, "time", backward=lambda x: (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
             move_label(ValueChangeEventArguments(0, 0, slider.value))
+            #add ok button to close dialog
+            ui.button("Ok", on_click=dialog.close).style("margin-top: 1em;").classes("w-full")
 
     
 
