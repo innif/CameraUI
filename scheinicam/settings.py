@@ -15,11 +15,14 @@ class Settings:
         '''Load settings from json, return True if successful'''
         try:
             data = json.load(open(filename, "r"))
-            self.start_time = datetime.fromisoformat(data["start_time"])
-            self.end_time = datetime.fromisoformat(data["end_time"])
+            self.start_time = datetime.time.fromisoformat(data["start_time"])
+            self.end_time = datetime.time.fromisoformat(data["end_time"])
+            self.shutdown_time = datetime.time.fromisoformat(data["shutdown_time"])
             self.delete_age = datetime.timedelta(seconds=data["delete_age"])
             return True
         except Exception as e:
+            print("error loading settings")
+            print(e)
             logging.exception(e)
             logging.warning(f"Could not load settings from {filename}")
             return False
@@ -30,6 +33,7 @@ class Settings:
             data = {
                 "start_time": self.start_time.isoformat(),
                 "end_time": self.end_time.isoformat(),
+                "shutdown_time": self.shutdown_time.isoformat(),
                 "delete_age": self.delete_age.total_seconds()
             }
             json.dump(data, open(filename, "w"))
@@ -39,6 +43,7 @@ class Settings:
 
     def set_default_values(self):
         '''Set default values'''
-        self.start_time = datetime.time(1, 55, 0)
-        self.end_time = datetime.time(4, 55, 0)
+        self.start_time = datetime.time(19, 55, 0)
+        self.end_time = datetime.time(22, 5, 0)
         self.delete_age = datetime.timedelta(days=7)
+        self.shutdown_time = datetime.time(0, 00, 0)

@@ -3,6 +3,7 @@ import time
 import threading
 import datetime
 import logging
+import os
 
 from filemanager import VideoFile, Filemanager, FileContainer
 from obscontroller import ObsController
@@ -63,7 +64,17 @@ def update_preview():
 t = threading.Thread(target=update_preview)
 t.start()
 
+def auto_shutdown():
+    '''Shuts down the computer at the time given in settings object'''
+    now = datetime.datetime.now()
+    shutdown_time = datetime.datetime.combine(datetime.date.today(), settings.shutdown_time)
+    if now > shutdown_time and now < shutdown_time + datetime.timedelta(seconds=10):
+        logging.info("Shutting down...")
+        print("Shutting down...")
+        os.system("shutdown /s /t 1")
+
 filemanager.delete_files_older_than(settings.delete_age)
 filemanager.delete_subclips()
 ui.timer(1, recording_controller.auto_record)
+ui.timer(1, auto_shutdown)
 ui.run(title="ScheiniCam", show=False)
