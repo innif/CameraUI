@@ -160,7 +160,7 @@ def download_page3(client: Client, filemanager: Filemanager):
         pass
     
     with ui.card().style("margin-bottom: 1em;"):
-        ui.label("Schritt 1: Aufnahme auswählen").classes("text-subtitle2")
+        ui.label("Schritt 1: Vorstellung auswählen").classes("text-subtitle2")
         ui.select(filemanager.get_file_dict(), value=filecontainer.get_file(), on_change=new_file_selected).classes("w-full").bind_value(filecontainer, "file")
     with ui.card().style("margin-bottom: 1em;"):
         ui.label("Schritt 2: Startzeit auswählen").classes("text-subtitle2")
@@ -169,10 +169,12 @@ def download_page3(client: Client, filemanager: Filemanager):
                 self.time = time
         time_selected = TimeContainer(0)
         start_time = filecontainer.get_file().start_time
+
         dialog = ui.dialog()
-        with ui.row():
-            label = ui.label().bind_text_from(time_selected, "time", backward=lambda x: (start_time+datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
-            ui.button("Zeit wählen", on_click=dialog.open)
+        
+        label = ui.label().bind_text_from(time_selected, "time", backward=lambda x: (start_time+datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
+        ui.button("Zeit wählen", on_click=dialog.open)
+
         with dialog:
             start_time = filecontainer.get_file().start_time
             end_time = filecontainer.get_file().get_end_time()
@@ -187,7 +189,12 @@ def download_page3(client: Client, filemanager: Filemanager):
                     ui.button("+10s", on_click=lambda: add_time(10))
                     ui.button("+1min", on_click=lambda: add_time(60))
                 ui.slider(min=0, max=range, step=1, value=0)\
-                    .bind_value(time_selected, "time").props('label-always')
+                    .bind_value(time_selected, "time").props('label-always')\
+                    .props("markers=\"True\" arrayMarkerLabel=\"[{ value:1,label:'$3'},{value:4,label:'$4'}]\"")
+                    # add start and end time as labels at ends of slider
+                ui.label(start_time.strftime("%H:%M:%S"))
+                ui.label(end_time.strftime("%H:%M:%S"))
+      
     with ui.card().style("margin-bottom: 1em;"):
         ui.label("Schritt 3: Endzeit auswählen").classes("text-subtitle2")
         dialog = ui.dialog()

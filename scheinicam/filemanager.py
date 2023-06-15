@@ -92,14 +92,14 @@ class VideoFile:
     def get_descriptor(self):
         '''Get descriptor'''
         if self.end_time is None:
-            return "{} von {}, laufend".format(
-                self.start_time.strftime("%d.%m.%Y"),
+            return "{} (seit {} laufend)".format(
+                self.start_time.strftime("%A, %d.%m.%Y"),
                 self.start_time.strftime("%H:%M Uhr"))
 
-        return "{} von {} bis {}".format(
-            self.start_time.strftime("%d.%m.%Y"), 
-            self.start_time.strftime("%H:%M Uhr"),
-            self.end_time.strftime("%H:%M Uhr")) #TODO: Add more information
+        return "{} ({} - {})".format(
+            self.start_time.strftime("%A, %d.%m.%Y"), 
+            self.start_time.strftime("%H:%M"),
+            self.end_time.strftime("%H:%M")) #TODO: Add more information
     
     def stop_recording(self):
         '''Stop recording'''
