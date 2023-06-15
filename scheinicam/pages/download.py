@@ -8,13 +8,28 @@ import threading
 import datetime
 import asyncio
 
-async def download_dialog(file, from_time_dict, to_time_dict):
+class TimeSelectContainer:
+    def __init__(self):
+        self.time = 0
+        self.start_time = None
+        self.end_time = None
+
+    def set_values(self, time: int, start_time: datetime.datetime, end_time: datetime.datetime):
+        self.time = time
+        self.start_time = start_time
+        self.end_time = end_time
+    
+    def duration(self):
+        return (self.end_time - self.start_time).total_seconds()
+    
+    def time_as_datetime(self) -> datetime.datetime:
+        return self.start_time + datetime.timedelta(seconds=self.time)
+
+async def download_dialog(file, from_time: datetime.time, to_time: datetime.time):
     '''Creates a download dialog for a video file'''
-    from_time = util.time_dict_to_time(from_time_dict)
-    to_time = util.time_dict_to_time(to_time_dict)
     dialog = ui.dialog()
     try:
-        logging.info(f"Download Dialog for {file.filename} from {from_time_dict} to {to_time_dict}")
+        logging.info(f"Download Dialog for {file.filename} from {from_time.strftime('%H:%M')} to {time.strftime('%H:%M')}")
         dialog.open()
         with dialog, ui.card():
             ui.label(f"Video herunterladen von {from_time.strftime('%H:%M')} bis {to_time.strftime('%H:%M')}")
@@ -27,6 +42,7 @@ async def download_dialog(file, from_time_dict, to_time_dict):
             waiting.set_visibility(False)
             ui.button("Herunterladen", on_click=lambda: ui.download(path, "video.mp4"))
     except Exception as e:
+        print(e)
         logging.exception(e)
         logging.error(f"Could not export video")
         ui.notify("Fehler beim Exportieren des Videos")
@@ -91,61 +107,46 @@ def download_page(client: Client, filemanager: Filemanager):
         await download_dialog(filecontainer.get_file(), start, end)
     ui.button("Herunterladen", on_click=dialog)
 
-def time_selector2(label, time):
-    '''Creates a time selector ui-elements'''
-    elements = {
-        'hour': {"min": 0, "max": 23, "format": "%02d", "label": "Stunde"},
-        'minute': {"min": 0, "max": 59, "format": "%02d", "label": "Minute"},
-        'second': {"min": 0, "max": 59, "format": "%02d", "label": "Sekunde"}
-    }
-    def plus_button(key, n: int):
-        def add():
-            time[key] = time[key] + n
-            if time[key] > elements[key]["max"]:
-                time[key] = elements[key]["max"]
-        ui.button(text=str(n), on_click=add)\
-            .classes("w-full")\
-            .bind_enabled_from(time, key, lambda x: x < elements[key]["max"])\
-            .props('icon=keyboard_arrow_up')
-    def minus_button(key, n: int):
-        def sub():
-            time[key] = time[key] - n
-            if time[key] < elements[key]["min"]:
-                time[key] = elements[key]["min"]
-        ui.button(text=str(n), on_click=sub)\
-            .classes("w-full")\
-            .bind_enabled_from(time, key, lambda x: x > elements[key]["min"])\
-            .props('icon=keyboard_arrow_down')
+def time_selector3(container: TimeSelectContainer):
+    dialog = ui.dialog()
 
-    with ui.card().style("margin-bottom: 1em;"):
-        ui.label(label).classes("w-full text-subtitle2 text-center")
-        with ui.grid(columns=len(elements)).classes("w-full"):
-            # add button to increase value
-            plus_button("hour", 10)
-            plus_button("minute", 10)
-            plus_button("second", 10)
-            # add button to increase value
-            plus_button("hour", 1)
-            plus_button("minute", 1)
-            plus_button("second", 1)
-            # add number input
-            for key, value in elements.items():
-                ui.number(label=value["label"], min=value["min"], max=value["max"], format=value["format"])\
-                    .bind_value(time, key, forward=lambda x: int(x))\
-                    .classes("w-full")\
-            # add button to decrease value
-            minus_button("hour", 1)
-            minus_button("minute", 1)
-            minus_button("second", 1)
-            # add button to decrease value
-            minus_button("hour", 10)
-            minus_button("minute", 10)
-            minus_button("second", 10)
+    ui.label().bind_text_from(container, "time", backward=lambda x: (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
+    ui.button("Zeit wählen", on_click=dialog.open)
 
-
-def download_page2(client: Client, filemanager: Filemanager):
-    time_selector2("Startzeit", {"hour": 19, "minute": 55, "second": 0})
-    time_selector2("Endzeit", {"hour": 22, "minute": 5, "second": 0})
+    with dialog:
+        range = container.duration()
+        with ui.card().classes("w-full"):
+            with ui.element("div").classes("w-full"):
+                label = ui.label()\
+                    .bind_text_from(container, "time", backward=lambda x: "Gewählte Zeit: " + (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S Uhr"))\
+                    .classes("text-subtitle2")
+            def move_label(event: ValueChangeEventArguments):
+                val = 100*(event.value/range)
+                translate = "transform: translate(-100%, 0%);" if val > 80 else\
+                            "transform: translate(0%, 0%);" if val < 20 else\
+                            "transform: translate(-50%, 0%);"
+                badge.style(f"left: {val}%; "+translate)
+            with ui.grid(columns=4).classes("w-full"):
+                def add_time(n: int):
+                    container.time += n
+                ui.button("-1min", on_click=lambda: add_time(-60))
+                ui.button("-10s", on_click=lambda: add_time(-10))
+                ui.button("+10s", on_click=lambda: add_time(10))
+                ui.button("+1min", on_click=lambda: add_time(60))
+            slider = ui.slider(min=0, max=range, step=1, value=0, on_change=move_label)\
+                .bind_value(container, "time")\
+                .props("marker-labels") # arrayMarkerLabel=\"[{\"value\":1,\"label\":\"$3\"},{\"value\":4,\"label\":\"$4\"}]\"
+            print(slider.slots)
+            with slider.add_slot("marker-label-group"):
+                with ui.row().classes("w-full"):
+                    ui.label(container.start_time.strftime("%H:%M Uhr"))
+                    ui.element("div").classes("grow")
+                    ui.label(container.end_time.strftime("%H:%M Uhr"))
+                #copilot, please make position relative to center
+                badge = ui.badge('0', color='red').props('floating').style('position: relative; left: 50%; top: 0%; transform: translate(-50%, 0%);')\
+                    .bind_text_from(container, "time", backward=lambda x: (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
+            move_label(ValueChangeEventArguments(0, 0, slider.value))
+    
 
 def download_page3(client: Client, filemanager: Filemanager):
     '''Creates the download page'''
@@ -156,69 +157,34 @@ def download_page3(client: Client, filemanager: Filemanager):
             ui.label("Keine Aufnahmen vorhanden")
         return
     
-    def new_file_selected(event: ValueChangeEventArguments):
-        pass
+    time_selected_start = TimeSelectContainer()
+    time_selected_end = TimeSelectContainer()
     
+    def new_file_selected(event: ValueChangeEventArguments):
+        time_selected_start.set_values(0, filecontainer.get_file().start_time, filecontainer.get_file().get_end_time())
+        time_selected_end.set_values(0, filecontainer.get_file().start_time, filecontainer.get_file().get_end_time())
+        time_selected_end.time = time_selected_end.duration()
+        with start_card:
+            start_card.clear()
+            ui.label("Schritt 2: Startzeit auswählen").classes("text-subtitle2")
+            time_selector3(time_selected_start)
+        with end_card:
+            end_card.clear()
+            ui.label("Schritt 3: Endzeit auswählen").classes("text-subtitle2")
+            time_selector3(time_selected_end)
+
     with ui.card().style("margin-bottom: 1em;"):
         ui.label("Schritt 1: Vorstellung auswählen").classes("text-subtitle2")
         ui.select(filemanager.get_file_dict(), value=filecontainer.get_file(), on_change=new_file_selected).classes("w-full").bind_value(filecontainer, "file")
-    with ui.card().style("margin-bottom: 1em;"):
-        ui.label("Schritt 2: Startzeit auswählen").classes("text-subtitle2")
-        class TimeContainer:
-            def __init__(self, time):
-                self.time = time
-        time_selected = TimeContainer(0)
-        start_time = filecontainer.get_file().start_time
+    
+    start_card = ui.card().style("margin-bottom: 1em;")
+    end_card = ui.card().style("margin-bottom: 1em;")
+    
+    async def dialog():
+        await download_dialog(filecontainer.get_file(), time_selected_start.time_as_datetime().time(), time_selected_end.time_as_datetime().time())
 
-        dialog = ui.dialog()
-
-        label = ui.label().bind_text_from(time_selected, "time", backward=lambda x: (start_time+datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
-        ui.button("Zeit wählen", on_click=dialog.open)
-
-        with dialog:
-            start_time = filecontainer.get_file().start_time
-            end_time = filecontainer.get_file().get_end_time()
-            range = (end_time - start_time).total_seconds()
-            with ui.card().classes("w-full"):
-                with ui.element("div").classes("w-full"):
-                    label = ui.label()\
-                        .bind_text_from(time_selected, "time", backward=lambda x: "Gewählte Zeit: "+(start_time+datetime.timedelta(seconds=x)).strftime("%H:%M:%S Uhr"))\
-                        .classes("text-subtitle2")#\
-                        #.style(f"position: relative; left: 50%; top: 0%;")
-                def move_label(event: ValueChangeEventArguments):
-                    val = 100*(event.value/range)
-                    translate = "transform: translate(-100%, 0%);" if val > 80 else "transform: translate(0%, 0%);" if val < 20 else "transform: translate(-50%, 0%);"
-                    badge.style(f"left: {val}%; "+translate)
-                with ui.grid(columns=4).classes("w-full"):
-                    def add_time(n: int):
-                        time_selected.time += n
-                    ui.button("-1min", on_click=lambda: add_time(-60))
-                    ui.button("-10s", on_click=lambda: add_time(-10))
-                    ui.button("+10s", on_click=lambda: add_time(10))
-                    ui.button("+1min", on_click=lambda: add_time(60))
-                slider = ui.slider(min=0, max=range, step=1, value=0, on_change=move_label)\
-                    .bind_value(time_selected, "time")\
-                    .props("marker-labels") # arrayMarkerLabel=\"[{\"value\":1,\"label\":\"$3\"},{\"value\":4,\"label\":\"$4\"}]\"
-                print(slider.slots)
-                with slider.add_slot("marker-label-group"):
-                    with ui.row().classes("w-full"):
-                        ui.label(start_time.strftime("%H:%M Uhr"))
-                        ui.element("div").classes("grow")
-                        ui.label(end_time.strftime("%H:%M Uhr"))
-                    #copilot, please make position relative to center
-                    badge = ui.badge('0', color='red').props('floating').style('position: relative; left: 50%; top: 0%; transform: translate(-50%, 0%);')\
-                        .bind_text_from(time_selected, "time", backward=lambda x: (start_time+datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
-                move_label(ValueChangeEventArguments(0, 0, slider.value))
-      
-    with ui.card().style("margin-bottom: 1em;"):
-        ui.label("Schritt 3: Endzeit auswählen").classes("text-subtitle2")
-        dialog = ui.dialog()
-        with ui.row():
-            label = ui.label("20:00:00")
-            ui.button("Zeit wählen", on_click=dialog.open)
-        with dialog:
-            with ui.time(mask="HH:mm:ss").props('with-seconds now-btn format24h').bind_value_to(label, "text"):
-                ui.button("OK", on_click=dialog.close)
     with ui.card().style("margin-bottom: 1em;"):
         ui.label("Schritt 4: Video herunterladen").classes("text-subtitle2")
-        ui.button("Herunterladen")
+        ui.button("Herunterladen", on_click=dialog)
+    
+    new_file_selected(None)
