@@ -101,6 +101,10 @@ class VideoFile:
             self.start_time.strftime("%H:%M"),
             self.end_time.strftime("%H:%M")) #TODO: Add more information
     
+    def get_download_filename(self, time: datetime.time):
+        '''Get download filename'''
+        return "Scheinbar_{}_{}.mp4".format(self.start_time.strftime("%Y-%m-%d"), time.strftime("%H-%M"))
+    
     def stop_recording(self):
         '''Stop recording'''
         self.end_time = datetime.datetime.now()
