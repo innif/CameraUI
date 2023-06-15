@@ -171,7 +171,7 @@ def download_page3(client: Client, filemanager: Filemanager):
         start_time = filecontainer.get_file().start_time
 
         dialog = ui.dialog()
-        
+
         label = ui.label().bind_text_from(time_selected, "time", backward=lambda x: (start_time+datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
         ui.button("Zeit wählen", on_click=dialog.open)
 
@@ -180,7 +180,15 @@ def download_page3(client: Client, filemanager: Filemanager):
             end_time = filecontainer.get_file().get_end_time()
             range = (end_time - start_time).total_seconds()
             with ui.card().classes("w-full"):
-                label = ui.label().bind_text_from(time_selected, "time", backward=lambda x: (start_time+datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
+                with ui.element("div").classes("w-full"):
+                    label = ui.label()\
+                        .bind_text_from(time_selected, "time", backward=lambda x: "Gewählte Zeit: "+(start_time+datetime.timedelta(seconds=x)).strftime("%H:%M:%S Uhr"))\
+                        .classes("text-subtitle2")#\
+                        #.style(f"position: relative; left: 50%; top: 0%;")
+                def move_label(event: ValueChangeEventArguments):
+                    val = 100*(event.value/range)
+                    translate = "transform: translate(-100%, 0%);" if val > 80 else "transform: translate(0%, 0%);" if val < 20 else "transform: translate(-50%, 0%);"
+                    badge.style(f"left: {val}%; "+translate)
                 with ui.grid(columns=4).classes("w-full"):
                     def add_time(n: int):
                         time_selected.time += n
@@ -188,12 +196,19 @@ def download_page3(client: Client, filemanager: Filemanager):
                     ui.button("-10s", on_click=lambda: add_time(-10))
                     ui.button("+10s", on_click=lambda: add_time(10))
                     ui.button("+1min", on_click=lambda: add_time(60))
-                ui.slider(min=0, max=range, step=1, value=0)\
-                    .bind_value(time_selected, "time").props('label-always')\
-                    .props("markers=\"True\" arrayMarkerLabel=\"[{ value:1,label:'$3'},{value:4,label:'$4'}]\"")
-                    # add start and end time as labels at ends of slider
-                ui.label(start_time.strftime("%H:%M:%S"))
-                ui.label(end_time.strftime("%H:%M:%S"))
+                slider = ui.slider(min=0, max=range, step=1, value=0, on_change=move_label)\
+                    .bind_value(time_selected, "time")\
+                    .props("marker-labels") # arrayMarkerLabel=\"[{\"value\":1,\"label\":\"$3\"},{\"value\":4,\"label\":\"$4\"}]\"
+                print(slider.slots)
+                with slider.add_slot("marker-label-group"):
+                    with ui.row().classes("w-full"):
+                        ui.label(start_time.strftime("%H:%M Uhr"))
+                        ui.element("div").classes("grow")
+                        ui.label(end_time.strftime("%H:%M Uhr"))
+                    #copilot, please make position relative to center
+                    badge = ui.badge('0', color='red').props('floating').style('position: relative; left: 50%; top: 0%; transform: translate(-50%, 0%);')\
+                        .bind_text_from(time_selected, "time", backward=lambda x: (start_time+datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
+                move_label(ValueChangeEventArguments(0, 0, slider.value))
       
     with ui.card().style("margin-bottom: 1em;"):
         ui.label("Schritt 3: Endzeit auswählen").classes("text-subtitle2")
