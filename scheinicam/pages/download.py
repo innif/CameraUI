@@ -91,8 +91,11 @@ def time_selector3(container: TimeSelectContainer):
                     .bind_text_from(container, "time", backward=lambda x: "Gewählte Zeit: " + (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S Uhr"))\
                     .classes("text-subtitle2").style("margin-bottom: 1em;")
 
-            def move_label(event: ValueChangeEventArguments):
-                val = 100*(event.value/range)
+            def move_label(event: ValueChangeEventArguments = None):
+                if event is None:
+                    val = 100*(slider.value/range)
+                else:
+                    val = 100*(event.value/range)
                 translate = "transform: translate(-100%, 0%);" if val > 80 else\
                             "transform: translate(0%, 0%);" if val < 20 else\
                             "transform: translate(-50%, 0%);"
@@ -116,7 +119,7 @@ def time_selector3(container: TimeSelectContainer):
                 #copilot, please make position relative to center
                 badge = ui.badge('0', color='red').props('floating').style('position: relative; left: 50%; top: 0%; transform: translate(-50%, 0%);')\
                     .bind_text_from(container, "time", backward=lambda x: (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
-            move_label(ValueChangeEventArguments(0, 0, slider.value))
+            move_label()
             #add ok button to close dialog
             ui.button("Ok", on_click=dialog.close).style("margin-top: 1em;").classes("w-full")
 
