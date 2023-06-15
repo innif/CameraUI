@@ -10,7 +10,7 @@ def recording_page(client: Client, obs_controller: ObsController, settings: Sett
     with ui.card().tight().style("margin-bottom: 1em;"):
         with ui.expansion("Anleitung", icon="description").classes("w-full"):
             with ui.card_section():
-                ui.markdown(open("assets/manual.md").read())
+                ui.markdown(open("assets/manual.md", encoding="utf-8").read())
 
     connecting_card = ui.card().style("margin-bottom: 1em;")
     with connecting_card:
@@ -33,5 +33,5 @@ def recording_page(client: Client, obs_controller: ObsController, settings: Sett
 
     no_recording_card = ui.card().style("margin-bottom: 1em;")
     with no_recording_card:
-        ui.html(f"<p>Zur Zeit läuft keine Aufnahme.</p> <p>Die Aufnahme startet {settings.start_time.strftime('%H:%M')} Uhr und endet {settings.end_time.strftime('%H:%M')} Uhr automatisch.</p> <p>Die Aufnahmen können weiterhin heruntergeladen werden.</p>")
+        ui.html(f"<p>Zur Zeit läuft keine Aufnahme.</p> <p>Die Aufnahme startet {settings.start_time.strftime('%H:%M')} Uhr und endet {settings.end_time.strftime('%H:%M')} Uhr automatisch.</p> <p>Die Aufnahmen können bis {settings.shutdown_time.strftime('%H:%M')} Uhr weiterhin heruntergeladen werden.</p> <p>Alle Aufnahmen werden automatisch nach {settings.delete_age.days} Tagen gelöscht.</p>")
     no_recording_card.bind_visibility_from(obs_controller, 'recording', backward=lambda x: not x)
