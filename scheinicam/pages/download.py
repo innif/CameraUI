@@ -35,7 +35,7 @@ class TimeSelectContainer:
     def time_as_datetime(self) -> datetime.datetime:
         return self.start_time + datetime.timedelta(seconds=self.time)
 
-async def download_dialog(file, from_time: datetime.time, to_time: datetime.time):
+async def download_dialog(file: VideoFile, from_time: datetime.time, to_time: datetime.time):
     '''Creates a download dialog for a video file'''
     dialog = ui.dialog()
     try:
@@ -50,7 +50,7 @@ async def download_dialog(file, from_time: datetime.time, to_time: datetime.time
             await asyncio.sleep(0.1)
             path = file.get_subclip(from_time, to_time)
             waiting.set_visibility(False)
-            ui.button("Herunterladen", on_click=lambda: ui.download(path, "video.mp4"))
+            ui.button("Herunterladen", on_click=lambda: ui.download(path, file.get_download_filename(from_time)))
     except Exception as e:
         print(e)
         logging.exception(e)
@@ -76,7 +76,7 @@ def preview(container: TimeSelectContainer):
 def time_selector3(container: TimeSelectContainer):
     dialog = ui.dialog()
 
-    ui.label().bind_text_from(container, "time", backward=lambda x: (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
+    ui.label().bind_text_from(container, "time", backward=lambda x: (container.start_time + datetime.timedelta(seconds=x)).strftime("Gewählt: %H:%M:%S Uhr"))
     ui.button("Zeit wählen", on_click=dialog.open)
 
     with dialog:
@@ -103,6 +103,10 @@ def time_selector3(container: TimeSelectContainer):
             with ui.grid(columns=4).classes("w-full").style("margin-bottom: 1em;"):
                 def add_time(n: int):
                     container.time += n
+                    if container.time < 0:
+                        container.time = 0
+                    elif container.time > range:
+                        container.time = range
                 ui.button("-1min", on_click=lambda: add_time(-60))
                 ui.button("-10s", on_click=lambda: add_time(-10))
                 ui.button("+10s", on_click=lambda: add_time(10))
@@ -117,7 +121,7 @@ def time_selector3(container: TimeSelectContainer):
                     ui.element("div").classes("grow")
                     ui.label(container.end_time.strftime("%H:%M Uhr"))
                 #copilot, please make position relative to center
-                badge = ui.badge('0', color='red').props('floating').style('position: relative; left: 50%; top: 0%; transform: translate(-50%, 0%);')\
+                badge = ui.badge('', color='red').props('floating').style('position: relative; left: 50%; top: 0%; transform: translate(-50%, 0%);')\
                     .bind_text_from(container, "time", backward=lambda x: (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
             move_label()
             #add ok button to close dialog
