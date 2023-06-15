@@ -13,11 +13,21 @@ class TimeSelectContainer:
         self.time = 0
         self.start_time = None
         self.end_time = None
+        self.file = None
 
-    def set_values(self, time: int, start_time: datetime.datetime, end_time: datetime.datetime):
+    def set_values(self, time: int, start_time: datetime.datetime, end_time: datetime.datetime, file: VideoFile):
         self.time = time
         self.start_time = start_time
         self.end_time = end_time
+        self.file = file
+
+    def set_from_file(self, file: VideoFile, end=False):
+        self.time = 0
+        self.start_time = file.start_time
+        self.end_time = file.end_time
+        self.file = file
+        if end:
+            self.time = self.duration()
     
     def duration(self):
         return (self.end_time - self.start_time).total_seconds()
@@ -52,7 +62,7 @@ def time_selector(label, time, filecontainer: FileContainer):
     '''Creates a time selector ui-elements with a preview image'''
     with ui.card().tight().style("min-width: 100%;"):
         time = {"hour": time.hour, "minute": time.minute, "second": time.second}
-        img = ui.image("") #TODO: replace with preview image
+        img = ui.image("")
         label = None
         with ui.card_section():
             label = ui.label("Vorschau nicht möglich")
@@ -107,6 +117,21 @@ def download_page(client: Client, filemanager: Filemanager):
         await download_dialog(filecontainer.get_file(), start, end)
     ui.button("Herunterladen", on_click=dialog)
 
+def preview(container: TimeSelectContainer):
+    img = ui.image("")
+    ui.button("Vorschau Aktualisieren", on_click=lambda: update_img()).style("margin-top: 1em; margin-left: 1em; margin-right: 1em;")
+    label = ui.label("Vorschau nicht möglich")
+    def update_img():
+        f = container.file
+        img_available = False
+        if f is not None:
+            frame = f.get_frame_at(container.time_as_datetime().time())
+            img.set_source(frame)
+            img_available = frame is not None
+        label.set_visibility(not img_available)
+        img.set_visibility(img_available)
+    update_img()
+
 def time_selector3(container: TimeSelectContainer):
     dialog = ui.dialog()
 
@@ -115,18 +140,23 @@ def time_selector3(container: TimeSelectContainer):
 
     with dialog:
         range = container.duration()
-        with ui.card().classes("w-full"):
+        card = ui.card().tight().classes("w-full")
+        with card:
+            preview(container)
+
+        with card, ui.card_section().classes("w-full"):
             with ui.element("div").classes("w-full"):
                 label = ui.label()\
                     .bind_text_from(container, "time", backward=lambda x: "Gewählte Zeit: " + (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S Uhr"))\
-                    .classes("text-subtitle2")
+                    .classes("text-subtitle2").style("margin-bottom: 1em;")
+
             def move_label(event: ValueChangeEventArguments):
                 val = 100*(event.value/range)
                 translate = "transform: translate(-100%, 0%);" if val > 80 else\
                             "transform: translate(0%, 0%);" if val < 20 else\
                             "transform: translate(-50%, 0%);"
                 badge.style(f"left: {val}%; "+translate)
-            with ui.grid(columns=4).classes("w-full"):
+            with ui.grid(columns=4).classes("w-full").style("margin-bottom: 1em;"):
                 def add_time(n: int):
                     container.time += n
                 ui.button("-1min", on_click=lambda: add_time(-60))
@@ -146,6 +176,7 @@ def time_selector3(container: TimeSelectContainer):
                 badge = ui.badge('0', color='red').props('floating').style('position: relative; left: 50%; top: 0%; transform: translate(-50%, 0%);')\
                     .bind_text_from(container, "time", backward=lambda x: (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
             move_label(ValueChangeEventArguments(0, 0, slider.value))
+
     
 
 def download_page3(client: Client, filemanager: Filemanager):
@@ -161,9 +192,8 @@ def download_page3(client: Client, filemanager: Filemanager):
     time_selected_end = TimeSelectContainer()
     
     def new_file_selected(event: ValueChangeEventArguments):
-        time_selected_start.set_values(0, filecontainer.get_file().start_time, filecontainer.get_file().get_end_time())
-        time_selected_end.set_values(0, filecontainer.get_file().start_time, filecontainer.get_file().get_end_time())
-        time_selected_end.time = time_selected_end.duration()
+        time_selected_start.set_from_file(filecontainer.get_file())
+        time_selected_end.set_from_file(filecontainer.get_file(), True)
         with start_card:
             start_card.clear()
             ui.label("Schritt 2: Startzeit auswählen").classes("text-subtitle2")
