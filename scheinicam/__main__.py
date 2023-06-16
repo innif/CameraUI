@@ -27,6 +27,7 @@ WIDTH = "50em"
 
 app.add_static_files('/videos', 'videos')
 app.add_static_files('/assets', 'assets')
+app.add_static_files('/logs', 'logs')
               
 @ui.page("/")
 def index(client: Client):
