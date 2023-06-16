@@ -15,6 +15,10 @@ from pages.download import download_page3 as download_page
 from pages.admin import admin_page
 from pages.recording import recording_page
 
+import locale
+
+locale.setlocale(locale.LC_ALL, 'de_DE')
+
 logging.basicConfig(filename=f'logs/log{datetime.datetime.now().strftime("%y-%m-%d--%H-%M-%S")}.log', encoding='utf-8', level=logging.INFO)
 
 settings = Settings()
