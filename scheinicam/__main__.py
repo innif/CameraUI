@@ -15,13 +15,11 @@ from pages.download import download_page3 as download_page
 from pages.admin import admin_page
 from pages.recording import recording_page
 
-#TODO: direkt herunterladen nach aufnahme beenden anbieten
-
 logging.basicConfig(filename=f'logs/log{datetime.datetime.now().strftime("%y-%m-%d--%H-%M-%S")}.log', encoding='utf-8', level=logging.INFO)
 
-obs_controller = ObsController()
-filemanager = Filemanager()
 settings = Settings()
+obs_controller = ObsController(settings=settings)
+filemanager = Filemanager()
 ui_object_container = UiObjectContainer()
 recording_controller = RecordingController(obs_controller, settings, filemanager)
 

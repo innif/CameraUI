@@ -4,13 +4,20 @@ from filemanager import VideoFile
 import threading
 import logging
 
-HOST = "localhost"
-PORT = 4455
-PASSWORD = "tXqFcBWo7WngUnAs"
-
 class ObsController:
-    def __init__(self, host=HOST, port=PORT, password=PASSWORD): # TODO: Error handling
+    def __init__(self, settings = None, host=None, port=None, password=None): # TODO: Error handling
         '''Initialize ObsController'''
+        if settings is not None:
+            try:
+                if host is None:
+                    host = settings.obs_settings["host"]
+                if port is None:
+                    port = settings.obs_settings["port"]
+                if password is None:
+                    password = settings.obs_settings["password"]
+            except Exception as e:
+                logging.exception(e)
+                logging.error("Error loading OBS settings")
         self.client = None
         self.recording = False
         self.preview = ""

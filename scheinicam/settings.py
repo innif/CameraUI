@@ -19,6 +19,7 @@ class Settings:
             self.end_time = datetime.time.fromisoformat(data["end_time"])
             self.shutdown_time = datetime.time.fromisoformat(data["shutdown_time"])
             self.delete_age = datetime.timedelta(seconds=data["delete_age"])
+            self.obs_settings = data["obs_settings"]
             return True
         except Exception as e:
             print("error loading settings")
@@ -34,9 +35,10 @@ class Settings:
                 "start_time": self.start_time.isoformat(),
                 "end_time": self.end_time.isoformat(),
                 "shutdown_time": self.shutdown_time.isoformat(),
-                "delete_age": self.delete_age.total_seconds()
+                "delete_age": self.delete_age.total_seconds(),
+                "obs_settings": self.obs_settings
             }
-            json.dump(data, open(filename, "w"))
+            json.dump(data, open(filename, "w"), indent=4)
         except Exception as e:
             logging.exception(e)
             logging.error(f"Could not save settings to {filename}")
@@ -47,3 +49,8 @@ class Settings:
         self.end_time = datetime.time(22, 5, 0)
         self.delete_age = datetime.timedelta(days=7)
         self.shutdown_time = datetime.time(0, 00, 0)
+        self.obs_settings = {
+            "host": "localhost",
+            "port": 4455,
+            "password": "tXqFcBWo7WngUnAs"
+        }
