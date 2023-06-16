@@ -23,6 +23,7 @@ class ObsController:
         self.preview = ""
         self.file = None
         self.connected = False
+        self.muted = False
         def connect():
             while True:
                 if not self.connected:
@@ -37,6 +38,7 @@ class ObsController:
             status = self.client.get_record_status()
             self.recording = status.output_active
             self.connected = True
+            self.unmute_video()
         except:
             self.connected = False
 
@@ -95,6 +97,7 @@ class ObsController:
             return
         try:
             self.client.set_current_program_scene("muted")
+            self.muted = True
         except Exception as e:
             self.connected = False
             logging.exception(e)
@@ -107,6 +110,7 @@ class ObsController:
             return
         try:
             self.client.set_current_program_scene("main")
+            self.muted = False
         except Exception as e:
             self.connected = False
             logging.exception(e)

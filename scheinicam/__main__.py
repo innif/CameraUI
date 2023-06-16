@@ -49,9 +49,12 @@ def admin(client: Client):
 def update_preview():
     while True:
         try:
+            if obs_controller.muted:
+                ui_object_container.html_preview = "<div style=\"padding:1em;\"><p>Aufnahme pausiert auf Wunsch eines Künstlers</p></div>"
+                continue
             img_data = obs_controller.get_screenshot()
             if img_data is None:
-                ui_object_container.html_preview = "<p>Keine Verbindung zu OBS</p>"
+                ui_object_container.html_preview = "<div style=\"padding:1em;\"><p>Keine Verbindung zu OBS</p></div>"
             else:
                 ui_object_container.html_preview = f"<img src=\"{img_data}\" width=\"100%\"/>"
         except Exception as e:

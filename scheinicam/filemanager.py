@@ -108,6 +108,7 @@ class VideoFile:
     
     def stop_recording(self):
         '''Stop recording'''
+        self.clip = None
         self.end_time = datetime.datetime.now()
         self.export_as_json()
 
