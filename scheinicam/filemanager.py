@@ -63,7 +63,8 @@ class VideoFile:
     
     def get_frame_at(self, time: datetime.time):
         try:
-            if self.clip is None:
+            if self.clip is None or (self.end_time is None and self.get_age() > self.clip.duration + 10):
+                print("generate video clip")
                 self.generate_video_clip()
             timestamp = datetime.datetime.combine(self.start_time.date(), time)
             timestamp_seconds = (timestamp - self.start_time).total_seconds()
@@ -121,6 +122,10 @@ class VideoFile:
         if self.clip is None:
             self.generate_video_clip()
         self.end_time = self.start_time + datetime.timedelta(seconds=self.clip.duration)
+
+    def get_age(self):
+        '''Get clip age'''
+        return (datetime.datetime.now() - self.start_time).total_seconds()
 
 class Filemanager:
     def __init__(self):
