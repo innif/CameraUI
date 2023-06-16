@@ -24,7 +24,7 @@ class TimeSelectContainer:
     def set_from_file(self, file: VideoFile, end=False):
         self.time = 0
         self.start_time = file.start_time
-        self.end_time = file.end_time
+        self.end_time = file.get_end_time()
         self.file = file
         if end:
             self.time = self.duration()
