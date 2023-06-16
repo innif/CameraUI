@@ -34,4 +34,8 @@ def admin_page(obs_controller: ObsController, filemanager: Filemanager):
             ui.button("Logfiles löschen", color="red", on_click=delete_logfiles).classes("w-full")
         # add section to delete videos
         with ui.expansion("Aufnahmen löschen").classes("w-full").style("max-width: 600px;"):
-            pass
+            with ui.grid(columns=2):
+                for file, descriptor in filemanager.get_file_dict().items():
+                    file_copy = file
+                    ui.label(descriptor).style("margin-right: 1em;")
+                    ui.button("Löschen", color="red")# ) #TODO only deletes newest file

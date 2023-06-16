@@ -128,6 +128,10 @@ class VideoFile:
         '''Get clip age'''
         return (datetime.datetime.now() - self.start_time).total_seconds()
 
+    def close(self):
+        if self.clip is not None:
+            self.clip.close()
+
 class Filemanager:
     def __init__(self):
         '''Initialize Filemanager'''
@@ -175,6 +179,7 @@ class Filemanager:
     def delete_file(self, file: VideoFile):
         '''Delete file'''
         try:
+            file.close()
             self.files.remove(file)
         except Exception as e:
             logging.exception(e)

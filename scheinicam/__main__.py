@@ -25,6 +25,9 @@ recording_controller = RecordingController(obs_controller, settings, filemanager
 
 WIDTH = "50em"
 
+filemanager.delete_files_older_than(settings.delete_age)
+filemanager.delete_subclips()
+
 app.add_static_files('/videos', 'videos')
 app.add_static_files('/assets', 'assets')
 app.add_static_files('/logs', 'logs')
@@ -45,7 +48,7 @@ def index(client: Client):
 # add admin page
 @ui.page("/admin")
 def admin(client: Client):
-    admin_page(obs_controller)
+    admin_page(obs_controller, filemanager)
 
 def update_preview():
     while True:
@@ -75,8 +78,6 @@ def auto_shutdown():
         print("Shutting down...")
         os.system("shutdown /s /t 1")
 
-filemanager.delete_files_older_than(settings.delete_age)
-filemanager.delete_subclips()
 ui.timer(1, recording_controller.auto_record)
 ui.timer(1, auto_shutdown)
 ui.run(title="ScheiniCam", show=False, port=80, favicon="📹")
