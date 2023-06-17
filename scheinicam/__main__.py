@@ -10,6 +10,7 @@ from obscontroller import ObsController
 from settings import Settings
 from ui_object_container import UiObjectContainer
 from recording_controller import RecordingController
+from zeroconfserver import ZeroconfServer
 
 from pages.download import download_page3 as download_page
 from pages.admin import admin_page
