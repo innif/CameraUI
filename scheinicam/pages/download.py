@@ -50,7 +50,11 @@ async def download_dialog(file: VideoFile, from_time: datetime.time, to_time: da
             await asyncio.sleep(0.1)
             path = file.get_subclip(from_time, to_time)
             waiting.set_visibility(False)
-            ui.button("Herunterladen", on_click=lambda: ui.download(path, file.get_download_filename(from_time)))
+            def download():
+                dialog.close()
+                ui.download(path, file.get_download_filename(from_time))
+                ui.notify("Download gestartet")
+            ui.button("Herunterladen", on_click=download)
     except Exception as e:
         print(e)
         logging.exception(e)
