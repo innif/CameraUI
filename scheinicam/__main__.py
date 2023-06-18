@@ -10,6 +10,7 @@ from obscontroller import ObsController
 from settings import Settings
 from ui_object_container import UiObjectContainer
 from recording_controller import RecordingController
+from zeroconfserver import ZeroconfServer
 
 from pages.download import download_page3 as download_page
 from pages.admin import admin_page
@@ -26,6 +27,8 @@ obs_controller = ObsController(settings=settings)
 filemanager = Filemanager()
 ui_object_container = UiObjectContainer()
 recording_controller = RecordingController(obs_controller, settings, filemanager)
+
+zeroconfserver = ZeroconfServer("camera", 80)
 
 WIDTH = "50em"
 
@@ -84,4 +87,5 @@ def auto_shutdown():
 
 ui.timer(1, recording_controller.auto_record)
 ui.timer(1, auto_shutdown)
+zeroconfserver.register_service()
 ui.run(title="ScheiniCam", show=False, port=80, favicon="📹")
