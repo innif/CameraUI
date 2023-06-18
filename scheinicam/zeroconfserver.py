@@ -10,14 +10,17 @@ class ZeroconfServer:
     def register_service(self):
         hostname = socket.gethostname()
         ip_address = socket.gethostbyname(hostname)
-        self.info = ServiceInfo(
-            "_http._tcp.local.",
-            f"{self.name}._http._tcp.local.",
-            addresses=[socket.inet_aton(ip_address)],
-            port=self.port,
-            server=f"{hostname}.local.",
-        )
-        zeroconf = Zeroconf(ip_version=IPVersion.All)
+        deviceType = '_http'
+        desc = {'deviceName': self.name}
+        # desc = {}
+
+        self.info = ServiceInfo(deviceType + "._tcp.local.",
+                        self.name + "." + deviceType +"._tcp.local.",
+                        self.port, 0, 0,
+                        addresses=socket.inet_aton(ip_address)
+                        )
+
+        zeroconf = Zeroconf()
         zeroconf.register_service(self.info)
         print(f"Registered service: {self.name} ({ip_address}:{self.port})")
 

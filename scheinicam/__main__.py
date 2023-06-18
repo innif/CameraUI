@@ -28,6 +28,8 @@ filemanager = Filemanager()
 ui_object_container = UiObjectContainer()
 recording_controller = RecordingController(obs_controller, settings, filemanager)
 
+zeroconfserver = ZeroconfServer("camera", 80)
+
 WIDTH = "50em"
 
 filemanager.delete_files_older_than(settings.delete_age)
@@ -85,4 +87,5 @@ def auto_shutdown():
 
 ui.timer(1, recording_controller.auto_record)
 ui.timer(1, auto_shutdown)
+zeroconfserver.register_service()
 ui.run(title="ScheiniCam", show=False, port=80, favicon="📹")
