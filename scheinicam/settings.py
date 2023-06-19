@@ -52,5 +52,5 @@ class Settings:
         self.obs_settings = {
             "host": "localhost",
             "port": 4455,
-            "password": "tXqFcBWo7WngUnAs"
+            "password": "password"
         }
