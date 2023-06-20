@@ -7,6 +7,7 @@ import logging
 class ObsController:
     def __init__(self, settings = None, host=None, port=None, password=None): # TODO: Error handling
         '''Initialize ObsController'''
+        self.show_logo = True
         if settings is not None:
             try:
                 if host is None:
@@ -15,6 +16,7 @@ class ObsController:
                     port = settings.obs_settings["port"]
                 if password is None:
                     password = settings.obs_settings["password"]
+                self.show_logo = settings.show_logo
             except Exception as e:
                 logging.exception(e)
                 logging.error("Error loading OBS settings")
@@ -39,6 +41,7 @@ class ObsController:
             self.recording = status.output_active
             self.connected = True
             self.unmute_video()
+            self.set_logo(self.show_logo)
         except:
             self.connected = False
 
@@ -126,6 +129,18 @@ class ObsController:
             settings.input_settings["active"] = False
             logging.info("disabling camera")
             self.client.set_input_settings("Camera", {"disable": True}, True)
+        except Exception as e:
+            self.connected = False
+            logging.exception(e)
+            logging.error("Error disabling camera")
+            raise Exception("Error disabling camera")
+        
+    def set_logo(self, logo: bool = True):
+        '''set if Logo is visible or not'''
+        if not self.connected:
+            return
+        try:
+            self.client.set_source_filter_enabled("logo", "hide", not logo)
         except Exception as e:
             self.connected = False
             logging.exception(e)
