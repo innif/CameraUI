@@ -10,28 +10,32 @@ import base64
 import logging
 
 class VideoFile:
+    '''Represents a video file'''
     def __init__(self, start_time=None, filename=None, end_time = None):
+        '''Initialize'''
         if start_time is None:
-            start_time = datetime.datetime.now()
+            start_time = datetime.datetime.now() # if no start time is given, use current time
         self.start_time = start_time
         if filename is None:
-            self._generate_filename()
+            self._generate_filename() # if no filename is given, generate one
             logging.info(f"new file: {self.filename}")
         else:
             self.filename = filename
         self.clip = None
-        self.end_time = end_time
+        self.end_time = end_time # end time None means that the video is still recording
 
     def _generate_filename(self):
-        ''' Generate filename '''
+        ''' Generate filename like 22-04-16_12-34-56.mp4'''
         now = datetime.datetime.now()
         output = now.strftime("%y-%m-%d_%H-%M-%S")
         self.filename = f"{output}"
     
     def generate_ui(self):
-        '''Generate UI'''
+        '''
+        Generate UI Card, presenting options to download and preview the video
+        TODO: add option to delete video
+        '''
         with ui.card().classes('w-full'):
-            #with ui.row():
             ui.html(f"{self.start_time.strftime('%d.%m.%Y, %H:%M')}")
             with ui.row():
                 ui.button("Preview", on_click=lambda: ui.open(f"videos/{self.filename}.mp4"))
@@ -47,35 +51,48 @@ class VideoFile:
         json.dump(data, open(f"videos/{self.filename}.json", "w"))
 
     def get_subclip(self, start: datetime.time, end: datetime.time):
-        '''Get subclip'''
+        '''
+        Get subclip
+        start: start time of subclip
+        end: end time of subclip
+        returns: path to subclip
+        '''
         self.generate_video_clip()
         start = datetime.datetime.combine(self.start_time.date(), start)
         end = datetime.datetime.combine(self.start_time.date(), end)
         # calculate start and end in seconds
         start_seconds = (start - self.start_time).total_seconds()
         end_seconds = (end - self.start_time).total_seconds()
+        # validate time range
         if end_seconds < start_seconds or start_seconds < 0 or end_seconds > self.clip.duration:
-            raise Exception("Invalid time range")
+            raise Exception("Invalid time range") # TODO: give warning to user
         logging.info(f"subclip in range start: {start_seconds}, end: {end_seconds}")
         output_path = f"videos/subclip_{self.filename}-{start_seconds}-{end_seconds}.mp4"
+        # create subclip
         ffmpeg_extract_subclip(f"videos/{self.filename}.mp4", start_seconds, end_seconds, targetname=output_path)
         return output_path
     
     def get_frame_at(self, time: datetime.time):
+        '''Get frame at time, output as base64'''
         try:
+            # generate video clip if not already generated or if video is still recording and clip is older than 10 seconds
             if self.clip is None or (self.end_time is None and self.get_age() > self.clip.duration + 10):
                 print("generate video clip")
                 self.generate_video_clip()
+            # calculate timestamp in seconds
             timestamp = datetime.datetime.combine(self.start_time.date(), time)
             timestamp_seconds = (timestamp - self.start_time).total_seconds()
+            # validate clip and timestamp
             if self.clip is None or timestamp_seconds < 0 or timestamp_seconds > self.clip.duration:
                 return None
+            # get frame
             frame = self.clip.get_frame(timestamp_seconds)
             # convert to frame base64 with jpg encoding
             img = Image.fromarray(frame, 'RGB')
             buff = BytesIO()
             img.save(buff, format="JPEG")
             img_string = base64.b64encode(buff.getvalue()).decode("utf-8")
+            # return base64 string
             return f"data:image/jpg;base64,{img_string}" 
         except Exception as e:
             logging.exception(e)
@@ -83,6 +100,7 @@ class VideoFile:
             return ""
     
     def generate_video_clip(self):
+        '''Generate video clip'''
         try:
             self.clip = mp.VideoFileClip(f"videos/{self.filename}.mp4")
         except Exception as e:
@@ -91,7 +109,7 @@ class VideoFile:
         logging.info("Video clip generated")
 
     def get_descriptor(self):
-        '''Get descriptor'''
+        '''Get descriptor for selector in download dialog'''
         if self.end_time is None:
             return "{} (seit {} laufend)".format(
                 self.start_time.strftime("%A, %d.%m.%Y"),
@@ -130,6 +148,7 @@ class VideoFile:
         return (datetime.datetime.now() - self.start_time).total_seconds()
 
     def close(self):
+        '''Close clip'''
         if self.clip is not None:
             self.clip.close()
 
