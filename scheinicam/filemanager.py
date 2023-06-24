@@ -109,7 +109,7 @@ class VideoFile:
     def stop_recording(self):
         '''Stop recording'''
         self.clip = None
-        self.end_time = datetime.datetime.now()
+        self.end_time = datetime.datetime.now() - datetime.timedelta(seconds=1) # move end time one second back
         self.export_as_json()
 
     def get_end_time(self):
@@ -122,7 +122,8 @@ class VideoFile:
         '''Calculate end time based on length of video clip'''
         if self.clip is None:
             self.generate_video_clip()
-        self.end_time = self.start_time + datetime.timedelta(seconds=self.clip.duration)
+        self.end_time = self.start_time + datetime.timedelta(seconds=self.clip.duration) # calculate end time based on length of video clip
+        self.end_time = self.end_time - datetime.timedelta(seconds=1) # move end time one second back
 
     def get_age(self):
         '''Get clip age'''
