@@ -55,7 +55,7 @@ def index(client: Client):
 # add admin page
 @ui.page("/admin")
 def admin(client: Client):
-    admin_page(obs_controller, filemanager)
+    admin_page(obs_controller, filemanager, settings)
 
 def update_preview():
     while True:
