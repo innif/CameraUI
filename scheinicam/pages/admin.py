@@ -3,10 +3,6 @@ import os
 from obscontroller import ObsController
 from filemanager import Filemanager
 
-#TODO: Löschen von Aufnahmen
-#TODO: Einstellungen
-# TODO Add options for start and end time
-
 def delete_logfiles():
     for file in os.listdir("logs"):
         if file.endswith(".log"):

@@ -102,7 +102,8 @@ class VideoFile:
     def generate_video_clip(self):
         '''Generate video clip'''
         try:
-            self.clip = mp.VideoFileClip(f"videos/{self.filename}.mp4")
+            self.clip = mp.VideoFileClip(f"videos/{self.filename}.mp4", target_resolution=(300, None), audio=False)
+            self.clip = self.clip.set_fps(2)
         except Exception as e:
             logging.exception(e)
             logging.error("Could not load video clip")
