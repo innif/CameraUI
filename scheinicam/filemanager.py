@@ -109,6 +109,18 @@ class VideoFile:
             logging.error("Could not load video clip")
         logging.info("Video clip generated")
 
+    def generate_frames(self):
+        print("start generating frames")
+        if self.clip is None:
+            self.generate_video_clip()
+        try:
+            for i in range(int(self.clip.duration)):
+                self.clip.save_frame(f"video-frames/{self.filename}_{i}.jpg", t=i)
+        except Exception as e:
+            logging.exception(e)
+            logging.error("Could not generate frames")
+        print("finished generating frames")
+
     def get_descriptor(self):
         '''Get descriptor for selector in download dialog'''
         if self.end_time is None:
