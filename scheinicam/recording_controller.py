@@ -7,11 +7,13 @@ import datetime
 
 class RecordingController:
     def __init__(self, obs_controller: ObsController, settings: Settings, filemanager: Filemanager):
+        ''' Controller for recording '''
         self.obs_controller = obs_controller
         self.settings = settings
         self.filemanager = filemanager
 
     def auto_record(self):
+        ''' Automatically start and stop recording based on settings '''
         if not self.obs_controller.connected:
             return
         now = datetime.datetime.now().time()
@@ -25,6 +27,7 @@ class RecordingController:
                 self.stop_record()
 
     def start_record(self):
+        ''' Start recording '''
         if not self.obs_controller.connected or self.obs_controller.recording:
             logging.warning("Could not start recording because OBS is not connected or already recording")
             return
@@ -42,6 +45,7 @@ class RecordingController:
             return
 
     def stop_record(self):
+        ''' Stop recording '''
         if not self.obs_controller.connected or not self.obs_controller.recording:
             logging.warning("Could not stop recording because OBS is not connected or not recording")
             return

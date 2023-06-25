@@ -18,29 +18,33 @@ from pages.recording import recording_page
 
 import locale
 
-locale.setlocale(locale.LC_ALL, 'de_DE')
+# constants
+WIDTH = "50em"
 
+# set locale & logging
+locale.setlocale(locale.LC_ALL, 'de_DE')
 logging.basicConfig(filename=f'logs/log{datetime.datetime.now().strftime("%y-%m-%d--%H-%M-%S")}.log', encoding='utf-8', level=logging.INFO)
 
+# create objects
 settings = Settings()
 obs_controller = ObsController(settings=settings)
 filemanager = Filemanager()
 ui_object_container = UiObjectContainer()
 recording_controller = RecordingController(obs_controller, settings, filemanager)
 
-zeroconfserver = ZeroconfServer("camera", 80)
-
-WIDTH = "50em"
-
+# delete old files
 filemanager.delete_files_older_than(settings.delete_age)
 filemanager.delete_subclips()
 
+# add static folders
 app.add_static_files('/videos', 'videos')
 app.add_static_files('/assets', 'assets')
 app.add_static_files('/logs', 'logs')
               
+# main landing page
 @ui.page("/")
 def index(client: Client):
+    '''Main page of the web interface'''
     with ui.column().style("margin: 0em; width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;"):
         with ui.tabs().style(f"width: {WIDTH}; max-width: 100%; display: block;") as tabs: 
             ui.tab('Aufnahme', icon='videocam')
@@ -52,12 +56,14 @@ def index(client: Client):
             with ui.tab_panel('Download').style("width: 100%;"):
                 download_page(client, filemanager)
 
-# add admin page
+# admin landing page
 @ui.page("/admin")
 def admin(client: Client):
+    '''Admin page of the web interface'''
     admin_page(obs_controller, filemanager)
 
 def update_preview():
+    '''Regularly updates the preview image'''
     while True:
         try:
             if obs_controller.muted:
@@ -73,6 +79,7 @@ def update_preview():
             logging.error(f"Could not update preview")
         time.sleep(.5)
 
+# create thread for updating preview
 t = threading.Thread(target=update_preview)
 t.start()
 
@@ -85,7 +92,13 @@ def auto_shutdown():
         print("Shutting down...")
         os.system("shutdown /s /t 1")
 
+# register service
+zeroconfserver = ZeroconfServer("camera", 80)
+zeroconfserver.register_service()
+
+#TODO remove from ui-thread
 ui.timer(1, recording_controller.auto_record)
 ui.timer(1, auto_shutdown)
-zeroconfserver.register_service()
+
+# run app
 ui.run(title="ScheiniCam", show=False, port=80, favicon="📹")

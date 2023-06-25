@@ -10,18 +10,21 @@ import asyncio
 
 class TimeSelectContainer:
     def __init__(self):
+        '''Container for the time selection'''
         self.time = 0
         self.start_time = None
         self.end_time = None
         self.file = None
 
     def set_values(self, time: int, start_time: datetime.datetime, end_time: datetime.datetime, file: VideoFile):
+        '''Sets the values of the container'''
         self.time = time
         self.start_time = start_time
         self.end_time = end_time
         self.file = file
 
     def set_from_file(self, file: VideoFile, end=False):
+        ''''Sets the values of the container from a file'''
         self.time = 0
         self.start_time = file.start_time
         self.end_time = file.get_end_time()
@@ -30,9 +33,11 @@ class TimeSelectContainer:
             self.time = self.duration()
     
     def duration(self):
+        '''Returns the duration of the container in seconds'''
         return (self.end_time - self.start_time).total_seconds()
     
     def time_as_datetime(self) -> datetime.datetime:
+        '''Returns the time as a datetime object'''
         return self.start_time + datetime.timedelta(seconds=self.time)
 
 async def download_dialog(file: VideoFile, from_time: datetime.time, to_time: datetime.time):
@@ -63,6 +68,7 @@ async def download_dialog(file: VideoFile, from_time: datetime.time, to_time: da
         dialog.close()
 
 def preview(container: TimeSelectContainer):
+    '''Creates a preview for the time selection'''
     img = ui.image("")
     ui.button("Vorschau Aktualisieren", on_click=lambda: update_img()).style("margin-top: 1em; margin-left: 1em; margin-right: 1em;")
     label = ui.label("Vorschau nicht möglich")
@@ -78,6 +84,7 @@ def preview(container: TimeSelectContainer):
     update_img()
 
 def time_selector3(container: TimeSelectContainer):
+    '''Creates a time selector for the download dialog'''
     dialog = ui.dialog()
 
     ui.label().bind_text_from(container, "time", backward=lambda x: (container.start_time + datetime.timedelta(seconds=x)).strftime("Gewählt: %H:%M:%S Uhr"))
@@ -141,11 +148,12 @@ def download_page3(client: Client, filemanager: Filemanager):
         with ui.card():
             ui.label("Keine Aufnahmen vorhanden")
         return
-    
+    # create containers for start and end time
     time_selected_start = TimeSelectContainer()
     time_selected_end = TimeSelectContainer()
     
     def new_file_selected(event: ValueChangeEventArguments):
+        ''' Called when a new file is selected '''
         time_selected_start.set_from_file(filecontainer.get_file())
         time_selected_end.set_from_file(filecontainer.get_file(), True)
         with start_card:
@@ -157,16 +165,18 @@ def download_page3(client: Client, filemanager: Filemanager):
             ui.label("Schritt 3: Endzeit auswählen").classes("text-subtitle2")
             time_selector3(time_selected_end)
 
+    # create card to select file (in this case = day)
     with ui.card().style("margin-bottom: 1em;"):
         ui.label("Schritt 1: Vorstellung auswählen").classes("text-subtitle2")
         ui.select(filemanager.get_file_dict(), value=filecontainer.get_file(), on_change=new_file_selected).classes("w-full").bind_value(filecontainer, "file")
     
+    # create cards for start and end time
     start_card = ui.card().style("margin-bottom: 1em;")
     end_card = ui.card().style("margin-bottom: 1em;")
     
+    # create card to download video
     async def dialog():
         await download_dialog(filecontainer.get_file(), time_selected_start.time_as_datetime().time(), time_selected_end.time_as_datetime().time())
-
     with ui.card().style("margin-bottom: 1em;"):
         ui.label("Schritt 4: Video herunterladen").classes("text-subtitle2")
         ui.button("Herunterladen", on_click=dialog)
