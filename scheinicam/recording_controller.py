@@ -15,7 +15,7 @@ class RecordingController:
         if not self.obs_controller.connected:
             return
         now = datetime.datetime.now().time()
-        if now > self.settings.start_time and now < self.settings.end_time:
+        if now > self.settings.start_time and now < self.settings.end_time and datetime.datetime.now().weekday() in self.settings.weekdays:
             if not self.obs_controller.recording:
                 logging.info("Starting recording")
                 self.start_record()

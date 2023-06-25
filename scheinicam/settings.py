@@ -21,6 +21,7 @@ class Settings:
             self.delete_age = datetime.timedelta(seconds=data["delete_age"])
             self.obs_settings = data["obs_settings"]
             self.show_logo = data.get("show_logo")
+            self.weekdays = data.get("weekdays")
             if self.show_logo is None:
                 self.show_logo = True
             return True
@@ -40,7 +41,8 @@ class Settings:
                 "shutdown_time": self.shutdown_time.isoformat(),
                 "delete_age": self.delete_age.total_seconds(),
                 "obs_settings": self.obs_settings,
-                "show_logo": self.show_logo
+                "show_logo": self.show_logo,
+                "weekdays": self.weekdays
             }
             json.dump(data, open(filename, "w"), indent=4)
         except Exception as e:
@@ -53,6 +55,7 @@ class Settings:
         self.end_time = datetime.time(22, 5, 0)
         self.delete_age = datetime.timedelta(days=7)
         self.shutdown_time = datetime.time(0, 00, 0)
+        self.weekdays = [0, 1, 2, 3, 4, 5, 6]
         self.obs_settings = {
             "host": "localhost",
             "port": 4455,
