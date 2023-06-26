@@ -3,10 +3,8 @@ from obscontroller import ObsController
 from settings import Settings
 from ui_object_container import UiObjectContainer
 
-def set_time_marker():
-    ui.notify("Zeitmarker gesetzt")
-
 def recording_page(client: Client, obs_controller: ObsController, settings: Settings, ui_object_container: UiObjectContainer):
+    '''Page for recording'''
     with ui.card().tight().style("margin-bottom: 1em;"):
         with ui.expansion("Anleitung", icon="description").classes("w-full"):
             with ui.card_section():
