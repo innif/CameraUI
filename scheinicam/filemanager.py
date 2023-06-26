@@ -3,7 +3,7 @@ from nicegui import ui
 import json
 import os
 import moviepy.editor as mp
-from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
+from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip, ffmpeg_resize
 from PIL import Image
 from io import BytesIO
 import base64
@@ -50,7 +50,7 @@ class VideoFile:
         }
         json.dump(data, open(f"videos/{self.filename}.json", "w"))
 
-    def get_subclip(self, start: datetime.time, end: datetime.time):
+    def get_subclip(self, start: datetime.time, end: datetime.time, resize: tuple = None):
         '''
         Get subclip
         start: start time of subclip
@@ -68,8 +68,19 @@ class VideoFile:
             raise Exception("Invalid time range") # TODO: give warning to user
         logging.info(f"subclip in range start: {start_seconds}, end: {end_seconds}")
         output_path = f"videos/subclip_{self.filename}-{start_seconds}-{end_seconds}.mp4"
+        temp_name = f"videos/subclip_{self.filename}-{start_seconds}-{end_seconds}_temp.mp4"
         # create subclip
-        ffmpeg_extract_subclip(f"videos/{self.filename}.mp4", start_seconds, end_seconds, targetname=output_path)
+        if resize is not None:
+            print("subclip")
+            ffmpeg_extract_subclip(f"videos/{self.filename}.mp4", start_seconds, end_seconds, targetname=temp_name)
+            print("resize")
+            ffmpeg_resize(temp_name, output_path, resize)
+            print("remove")
+            os.remove(temp_name)
+            print("done")
+        else:
+            ffmpeg_extract_subclip(f"videos/{self.filename}.mp4", start_seconds, end_seconds, targetname=output_path)
+        ffmpeg_resize()
         return output_path
     
     def get_frame_at(self, time: datetime.time):
