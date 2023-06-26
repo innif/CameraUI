@@ -50,7 +50,7 @@ class VideoFile:
         }
         json.dump(data, open(f"videos/{self.filename}.json", "w"))
 
-    def get_subclip(self, start: datetime.time, end: datetime.time):
+    async def get_subclip(self, start: datetime.time, end: datetime.time):
         '''
         Get subclip
         start: start time of subclip

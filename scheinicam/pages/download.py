@@ -52,7 +52,7 @@ async def download_dialog(file: VideoFile, from_time: datetime.time, to_time: da
                 ui.spinner()
                 ui.label("Video wird exportiert...")
             await asyncio.sleep(0.1)
-            path = file.get_subclip(from_time, to_time, (1280, 720))
+            path = await file.get_subclip(from_time, to_time)
             waiting.set_visibility(False)
             def download():
                 dialog.close()
