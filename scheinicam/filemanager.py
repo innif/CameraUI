@@ -2,8 +2,9 @@ import datetime
 from nicegui import ui
 import json
 import os
-import moviepy.editor as mp
+import moviepy.editor as mp 
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
+import cv2
 from PIL import Image
 from io import BytesIO
 import base64
@@ -86,7 +87,10 @@ class VideoFile:
             if self.clip is None or timestamp_seconds < 0 or timestamp_seconds > self.clip.duration:
                 return None
             # get frame
-            frame = self.clip.get_frame(timestamp_seconds)
+            self.cv_clip.set(cv2.CAP_PROP_POS_MSEC, timestamp_seconds * 1000)
+            _, frame = self.cv_clip.read()
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = cv2.resize(frame, (800, 450))
             # convert to frame base64 with jpg encoding
             img = Image.fromarray(frame, 'RGB')
             buff = BytesIO()
@@ -103,23 +107,12 @@ class VideoFile:
         '''Generate video clip'''
         try:
             self.clip = mp.VideoFileClip(f"videos/{self.filename}.mp4", target_resolution=(300, None), audio=False)
-            self.clip = self.clip.set_fps(2)
+            #self.clip = self.clip.set_fps(2)
+            self.cv_clip = cv2.VideoCapture(f"videos/{self.filename}.mp4")
         except Exception as e:
             logging.exception(e)
             logging.error("Could not load video clip")
         logging.info("Video clip generated")
-
-    def generate_frames(self):
-        print("start generating frames")
-        if self.clip is None:
-            self.generate_video_clip()
-        try:
-            for i in range(int(self.clip.duration)):
-                self.clip.save_frame(f"video-frames/{self.filename}_{i}.jpg", t=i)
-        except Exception as e:
-            logging.exception(e)
-            logging.error("Could not generate frames")
-        print("finished generating frames")
 
     def get_descriptor(self):
         '''Get descriptor for selector in download dialog'''
@@ -163,7 +156,7 @@ class VideoFile:
     def close(self):
         '''Close clip'''
         if self.clip is not None:
-            self.clip.close()
+            self.clip.release()
 
 class Filemanager:
     def __init__(self):
