@@ -81,6 +81,7 @@ def preview(container: TimeSelectContainer):
         label.set_visibility(not img_available)
         img.set_visibility(img_available)
     update_img()
+    return update_img
 
 def time_selector3(container: TimeSelectContainer):
     '''Creates a time selector for the download dialog'''
@@ -93,7 +94,7 @@ def time_selector3(container: TimeSelectContainer):
         range = container.duration()
         card = ui.card().tight().classes("w-full")
         with card:
-            preview(container)
+            preview_update = preview(container)
 
         with card, ui.card_section().classes("w-full"):
             with ui.element("div").classes("w-full"):
@@ -110,6 +111,7 @@ def time_selector3(container: TimeSelectContainer):
                             "transform: translate(0%, 0%);" if val < 20 else\
                             "transform: translate(-50%, 0%);"
                 badge.style(f"left: {val}%; "+translate)
+                preview_update()
             with ui.grid(columns=4).classes("w-full").style("margin-bottom: 1em;"):
                 def add_time(n: int):
                     container.time += n
@@ -123,7 +125,7 @@ def time_selector3(container: TimeSelectContainer):
                 ui.button("+1min", on_click=lambda: add_time(60))
             slider = ui.slider(min=0, max=range, step=1, value=0, on_change=move_label)\
                 .bind_value(container, "time")\
-                .props("marker-labels") # arrayMarkerLabel=\"[{\"value\":1,\"label\":\"$3\"},{\"value\":4,\"label\":\"$4\"}]\"
+                .props("marker-labels")
             print(slider.slots)
             with slider.add_slot("marker-label-group"):
                 with ui.row().classes("w-full"):
