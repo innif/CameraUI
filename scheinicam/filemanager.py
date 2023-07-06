@@ -169,9 +169,14 @@ class Filemanager:
                 file = self.file_from_json(f"videos/{filename}")
                 if file is None:
                     continue
-                if file.end_time is None:
-                    file.calculate_end_time()
-                self.files.append(file)
+                try:
+                    if file.end_time is None:
+                        file.calculate_end_time()
+                        file.export_as_json()
+                    self.files.append(file)
+                except Exception as e:
+                    logging.exception(e)
+                    logging.error(f"Could not load file {filename}")
 
     def file_from_json(self, filename):
         '''Create file from json'''
