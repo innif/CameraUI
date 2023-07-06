@@ -56,7 +56,7 @@ async def download_dialog(file: VideoFile, from_time: datetime.time, to_time: da
             waiting.set_visibility(False)
             def download():
                 dialog.close()
-                ui.download(path, file.get_download_filename(from_time))
+                ui.open(f"download/{path.split('/')[-1]}/{file.get_download_filename(from_time)}")
                 ui.notify("Download gestartet")
             ui.button("Herunterladen", on_click=download)
     except Exception as e:
@@ -181,3 +181,9 @@ def download_page3(client: Client, filemanager: Filemanager):
         ui.button("Herunterladen", on_click=dialog)
     
     new_file_selected(None)
+
+@ui.page('/download/{path}/{filename}')
+def page(path: str, filename: str):
+    ui.label(path)
+    ui.button("Download", on_click=lambda: ui.download("videos/"+path, filename))
+    ui.download("videos/"+path, filename)
