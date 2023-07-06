@@ -2,6 +2,7 @@ from nicegui import ui, app, Client
 import os
 from obscontroller import ObsController
 from filemanager import Filemanager
+from ui_object_container import UiObjectContainer
 
 def delete_logfiles():
     '''Deletes all logfiles in the logs folder'''
@@ -9,7 +10,7 @@ def delete_logfiles():
         if file.endswith(".log"):
             os.remove(f"logs/{file}")
 
-def admin_page(obs_controller: ObsController, filemanager: Filemanager):
+def admin_page(obs_controller: ObsController, filemanager: Filemanager, ui_object_container: UiObjectContainer):
     ''' Admin page of the web interface '''
     with ui.column().style("margin: 0em; width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;"):
         # Add Identifier showing if Recording is muted
@@ -22,6 +23,10 @@ def admin_page(obs_controller: ObsController, filemanager: Filemanager):
                 ui.row().style("margin-top: 1em;").classes("w-full"):
             ui.button('Aufnahme stumm schalten', color="red", on_click=obs_controller.mute_video).classes("w-full").style("height: 6em;")
             ui.button('Aufnahme wieder einschalten', color="blue", on_click=obs_controller.unmute_video).classes("w-full").style("height: 6em;")
+        # Add Preview
+        with ui.expansion("Vorschau").classes("w-full").style("max-width: 600px;"):
+            preview = ui.html("")
+            preview.bind_content_from(ui_object_container, 'html_preview')
         # Add Buttons to shutdown and reload Camera
         with ui.expansion("Erweiterte Funktionen").classes("w-full").style("max-width: 600px;"):
             ui.button("Kamera neu laden", color="blue", on_click=obs_controller.reload_camera).classes("w-full").style("margin-bottom: 1em;")

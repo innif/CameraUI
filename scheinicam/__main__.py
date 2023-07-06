@@ -60,7 +60,7 @@ def index(client: Client):
 @ui.page("/admin")
 def admin(client: Client):
     '''Admin page of the web interface'''
-    admin_page(obs_controller, filemanager)
+    admin_page(obs_controller, filemanager, ui_object_container)
 
 def update_preview():
     '''Regularly updates the preview image'''
