@@ -32,6 +32,12 @@ class RecordingController:
             logging.warning("Could not start recording because OBS is not connected or already recording")
             return
         try:
+            self.obs_controller.reload_camera()
+        except Exception as e:
+            logging.exception(e)
+            logging.error(f"Could not reload camera")
+            return
+        try:
             file = self.obs_controller.record()
             if file is None:
                 logging.error("Could not start recording because file is None")
