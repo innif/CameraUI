@@ -111,7 +111,7 @@ def time_selector3(container: TimeSelectContainer):
                             "transform: translate(0%, 0%);" if val < 20 else\
                             "transform: translate(-50%, 0%);"
                 badge.style(f"left: {val}%; "+translate)
-                preview_update()
+                # preview_update() TODO: Automatic Update without stuttering
             with ui.grid(columns=4).classes("w-full").style("margin-bottom: 1em;"):
                 def add_time(n: int):
                     container.time += n
