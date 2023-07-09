@@ -1,4 +1,5 @@
 nicegui==1.2.14
 obsws_python
 moviepy
+opencv-python
 zeroconf
