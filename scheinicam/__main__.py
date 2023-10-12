@@ -93,8 +93,8 @@ def auto_shutdown():
         os.system("shutdown /s /t 1")
 
 # register service
-zeroconfserver = ZeroconfServer("camera", 80)
-zeroconfserver.register_service()
+#zeroconfserver = ZeroconfServer("camera", 80)
+#zeroconfserver.register_service()
 
 #TODO remove from ui-thread
 ui.timer(1, recording_controller.auto_record)

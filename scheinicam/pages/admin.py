@@ -3,6 +3,7 @@ import os
 from obscontroller import ObsController
 from filemanager import Filemanager
 from ui_object_container import UiObjectContainer
+from recording_controller import RecordingController
 
 def delete_logfiles():
     '''Deletes all logfiles in the logs folder'''
@@ -27,6 +28,9 @@ def admin_page(obs_controller: ObsController, filemanager: Filemanager, ui_objec
         with ui.expansion("Vorschau").classes("w-full").style("max-width: 600px;"):
             preview = ui.html("")
             preview.bind_content_from(ui_object_container, 'html_preview')
+        with ui.expansion("Manuell starten/stoppen").classes("w-full").style("max-width: 600px;"):
+            ui.button('Aufnahme starten', color="green", on_click=recording_controller.start_record).classes("w-full").style("height: 6em;").bind_visibility_from(obs_controller,"recording", lambda x : not x)
+            ui.button('Aufnahme stoppen', color="red", on_click=recording_controller.stop_record).classes("w-full").style("height: 6em;").bind_visibility_from(obs_controller,"recording")
         # Add Buttons to shutdown and reload Camera
         with ui.expansion("Erweiterte Funktionen").classes("w-full").style("max-width: 600px;"):
             ui.button("Kamera neu laden", color="blue", on_click=obs_controller.reload_camera).classes("w-full").style("margin-bottom: 1em;")
@@ -40,10 +44,11 @@ def admin_page(obs_controller: ObsController, filemanager: Filemanager, ui_objec
             ui.button("Logfiles löschen", color="red", on_click=delete_logfiles).classes("w-full")
         # add section to delete videos
         with ui.expansion("Aufnahmen löschen").classes("w-full").style("max-width: 600px;"):
-            grid = ui.grid(columns=2)
+            grid = ui.grid(columns=3)
             def fill_grid():
                 with grid:
                     for file, descriptor in filemanager.get_file_dict().items():
                         ui.label(descriptor).style("margin-right: 1em;")
+                        ui.button("Download", on_click=lambda: ui.download(f"videos/{file.filename}.mp4"))
                         ui.button("Löschen", color="red", on_click=lambda event, file=file: [filemanager.delete_file(file), grid.clear(), fill_grid()])
             fill_grid()
