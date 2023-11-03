@@ -89,8 +89,8 @@ def time_selector3(container: TimeSelectContainer):
     '''Creates a time selector for the download dialog'''
     dialog = ui.dialog()
 
-    ui.label().bind_text_from(container, "time", backward=lambda x: (container.start_time + datetime.timedelta(seconds=x)).strftime("Gewählt: %H:%M:%S Uhr"))
     ui.button("Zeit wählen", on_click=dialog.open)
+    ui.label().bind_text_from(container, "time", backward=lambda x: (container.start_time + datetime.timedelta(seconds=x)).strftime("Gewählt: %H:%M:%S Uhr"))
 
     with dialog:
         range = container.duration()
@@ -161,28 +161,34 @@ def download_page3(client: Client, filemanager: Filemanager):
         time_selected_end.set_from_file(filecontainer.get_file(), True)
         with start_card:
             start_card.clear()
-            ui.label("Schritt 2: Startzeit auswählen").classes("text-subtitle2")
             time_selector3(time_selected_start)
+            with ui.stepper_navigation():
+                ui.button('Weiter', on_click=stepper.next, color="green")
+                ui.button('Zurück', on_click=stepper.previous).props('flat')
         with end_card:
             end_card.clear()
-            ui.label("Schritt 3: Endzeit auswählen").classes("text-subtitle2")
             time_selector3(time_selected_end)
-
-    # create card to select file (in this case = day)
-    with ui.card().style("margin-bottom: 1em;"):
-        ui.label("Schritt 1: Vorstellung auswählen").classes("text-subtitle2")
-        ui.select(filemanager.get_file_dict(), value=filecontainer.get_file(), on_change=new_file_selected).classes("w-full").bind_value(filecontainer, "file")
-    
-    # create cards for start and end time
-    start_card = ui.card().style("margin-bottom: 1em;")
-    end_card = ui.card().style("margin-bottom: 1em;")
+            with ui.stepper_navigation():
+                ui.button('Weiter', on_click=stepper.next, color="green")
+                ui.button('Zurück', on_click=stepper.previous).props('flat')
     
     # create card to download video
     async def dialog():
         await download_dialog(filecontainer.get_file(), time_selected_start.time_as_datetime().time(), time_selected_end.time_as_datetime().time())
-    with ui.card().style("margin-bottom: 1em;"):
-        ui.label("Schritt 4: Video herunterladen").classes("text-subtitle2")
-        ui.button("Herunterladen", on_click=dialog)
+    
+    with ui.stepper().props('vertical').classes('w-full') as stepper:
+        with ui.step('Vorstellung auswählen', icon='videocam'):
+            ui.label("Hier musst du den Tag auswählen, von dem du das Video herunterladen willst. Standardmäßig wird das neueste Video ausgewählt.")
+            ui.select(filemanager.get_file_dict(), value=filecontainer.get_file(), on_change=new_file_selected).classes("w-full").bind_value(filecontainer, "file")
+            with ui.stepper_navigation():
+                ui.button('Weiter', on_click=stepper.next, color="green")
+        start_card = ui.step('Startzeit auswählen', icon='timer')
+        end_card = ui.step('Endzeit auswählen', icon='timer')
+        with ui.step('Video exportieren', icon='file_download'):
+            ui.button("Exportieren", on_click=dialog)
+            ui.label("Wenn du auf den Button klickst, wird dein Video automatisch vom Server zugeschnitten. Anschließend kannst du es herunterladen.")
+            with ui.stepper_navigation():
+                ui.button('Zurück', on_click=stepper.previous).props('flat')
     
     new_file_selected(None)
 
