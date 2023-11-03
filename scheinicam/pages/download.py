@@ -40,33 +40,31 @@ class TimeSelectContainer:
         '''Returns the time as a datetime object'''
         return self.start_time + datetime.timedelta(seconds=self.time)
 
-async def download_dialog(file: VideoFile, from_time: datetime.time, to_time: datetime.time):
+async def export_dialog(file: VideoFile, from_time: datetime.time, to_time: datetime.time):
     '''Creates a download dialog for a video file'''
     dialog = ui.dialog()
     try:
         logging.info(f"Download Dialog for {file.filename} from {from_time.strftime('%H:%M')} to {time.strftime('%H:%M')}")
         dialog.open()
         with dialog, ui.card():
-            ui.label(f"Video herunterladen von {from_time.strftime('%H:%M')} bis {to_time.strftime('%H:%M')}")
+            ui.label(f"Video Exportieren von {from_time.strftime('%H:%M')} bis {to_time.strftime('%H:%M')}").classes("text-subtitle2")
+            ui.label("Bitte warten... Das Exportieren sollte maximal 2 Minuten dauern.")
             waiting = ui.row().style("align-items: center")
             with waiting:
                 ui.spinner()
                 ui.label("Video wird exportiert...")
             await asyncio.sleep(0.1)
             path = await file.get_subclip(from_time, to_time)
-            waiting.set_visibility(False)
-            ui.label(f"Dateigröße: {get_filesize_string(path)}")
-            def download():
-                dialog.close()
-                ui.download(path, file.get_download_filename(from_time))
-                ui.notify("Download gestartet")
-            ui.button("Herunterladen", on_click=download)
+            await asyncio.sleep(0.1)
+            dialog.close()
+            return path
     except Exception as e:
         print(e)
         logging.exception(e)
         logging.error(f"Could not export video")
         ui.notify("Fehler beim Exportieren des Videos")
         dialog.close()
+        return None
 
 def preview(container: TimeSelectContainer):
     '''Creates a preview for the time selection'''
@@ -99,6 +97,10 @@ def time_selector3(container: TimeSelectContainer):
                 .classes("text-lg").style("margin-bottom: 1em;")
 
         def move_label(event: ValueChangeEventArguments = None):
+            try:
+                slider
+            except NameError:
+                return
             if event is None:
                 val = 100*(slider.value/range)
             else:
@@ -165,28 +167,44 @@ def download_page3(client: Client, filemanager: Filemanager):
             with ui.stepper_navigation():
                 ui.button('Weiter', on_click=stepper.next, color="green")
                 ui.button('Zurück', on_click=stepper.previous).props('flat')
-    
+    path = None
+
     # create card to download video
-    async def dialog():
-        await download_dialog(filecontainer.get_file(), time_selected_start.time_as_datetime().time(), time_selected_end.time_as_datetime().time())
-    
+    async def export_button():
+        file = filecontainer.get_file()
+        from_time = time_selected_start.time_as_datetime().time()
+        path = await export_dialog(file, from_time, time_selected_end.time_as_datetime().time())
+        if path is not None:
+            stepper.next()
+            with download_step:
+                download_step.clear()
+                ui.label("Dein Video wurde exportiert und du kannst es jetzt herunterladen. Dies kann einige Minuten dauern. Solange musst du mit dem WiFi in der Scheinbar verbunden bleiben. Am schnellsten funktioniert der Download in der Nähe des Tresens. Wenn mehrere Personen paralel Videos herunterladen, ist der Download entsprechend langsamer. Nach dem Download findest du das Video in deinem Downloads-Ordner.")
+                ui.label(f"Dateigröße: {get_filesize_string(path)}")
+                def download():
+                    ui.download(path, file.get_download_filename(from_time))
+                    ui.notify("Download gestartet")
+                with ui.stepper_navigation():
+                    ui.button("Herunterladen", on_click=download)
+                    ui.button('Zurück', on_click=stepper.previous).props('flat')
+
     with ui.stepper().props('vertical flat').classes('w-full') as stepper:
-        with ui.step('Vorstellung auswählen', icon='videocam'):
+        with ui.step('Vorstellung auswählen', icon='event'):
             ui.label("Hier musst du den Tag auswählen, von dem du das Video herunterladen willst. Standardmäßig wird das neueste Video ausgewählt.")
             with ui.card().classes("w-full"):
                 ui.label("Aufnahme auswählen").classes("text-subtitle2")
                 ui.select(filemanager.get_file_dict(), value=filecontainer.get_file(), on_change=new_file_selected).classes("w-full").bind_value(filecontainer, "file")
             with ui.stepper_navigation():
                 ui.button('Weiter', on_click=stepper.next, color="green")
-        start_card = ui.step('Startzeit auswählen', icon='timer')
-        end_card = ui.step('Endzeit auswählen', icon='timer')
-        with ui.step('Video exportieren', icon='file_download'):
-            ui.label("Wenn du auf den Button klickst, wird dein Video automatisch vom Server zugeschnitten. Anschließend kannst du es herunterladen.")
-            with ui.card().classes("w-full"):
-                ui.label("Video exportieren").classes("text-subtitle2")
-                ui.button("Exportieren", on_click=dialog).classes("w-full")
+        start_card = ui.step('Startzeit auswählen', icon='schedule')
+        end_card = ui.step('Endzeit auswählen', icon='browse_gallery')
+        with ui.step('Video exportieren', icon='movie'):
+            ui.label("Wenn du auf den Button \"Exportieren\" klickst, wird dein Video automatisch vom Server zugeschnitten. Anschließend kannst du es herunterladen.")
+            # with ui.card().classes("w-full"):
+            #     ui.label("Video exportieren").classes("text-subtitle2")
             with ui.stepper_navigation():
+                ui.button("Exportieren", on_click=export_button)
                 ui.button('Zurück', on_click=stepper.previous).props('flat')
+        download_step = ui.step('Video herunterladen', icon='file_download')
     
     new_file_selected(None)
 

@@ -156,7 +156,7 @@ class VideoFile:
     def close(self):
         '''Close clip'''
         if self.clip is not None:
-            self.clip.release()
+            self.clip.close()
 
 class Filemanager:
     def __init__(self):

@@ -62,6 +62,13 @@ def admin(client: Client):
     '''Admin page of the web interface'''
     admin_page(obs_controller, filemanager, ui_object_container, recording_controller)
 
+@ui.page("/download")
+def download(client: Client):
+    with ui.grid(columns=2):
+        for file, descriptor in filemanager.get_file_dict().items():
+            ui.label(descriptor).style("margin-right: 1em;")
+            ui.button("Download", on_click=lambda: ui.download(f"videos/{file.filename}.mp4"))
+            
 def update_preview():
     '''Regularly updates the preview image'''
     while True:
@@ -77,7 +84,7 @@ def update_preview():
         except Exception as e:
             logging.exception(e)
             logging.error(f"Could not update preview")
-        time.sleep(.5)
+        time.sleep(5)
 
 # create thread for updating preview
 t = threading.Thread(target=update_preview)
