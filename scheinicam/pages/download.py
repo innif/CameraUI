@@ -96,7 +96,7 @@ def time_selector3(container: TimeSelectContainer):
         with ui.element("div").classes("w-full"):
             label = ui.label()\
                 .bind_text_from(container, "time", backward=lambda x: "Gewählte Zeit: " + (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S Uhr"))\
-                .classes("text-subtitle2").style("margin-bottom: 1em;")
+                .classes("text-lg").style("margin-bottom: 1em;")
 
         def move_label(event: ValueChangeEventArguments = None):
             if event is None:
