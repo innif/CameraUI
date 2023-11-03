@@ -48,12 +48,12 @@ def index(client: Client):
     with ui.column().style("margin: 0em; width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;"):
         with ui.tabs().style(f"width: {WIDTH}; max-width: 100%; display: block;") as tabs: 
             ui.tab('Aufnahme', icon='videocam')
-            ui.tab('Download', icon='file_download')
+            ui.tab('Videoarchiv', icon='file_download')
         # Content
         with ui.tab_panels(tabs, value='Aufnahme').style(f"width: {WIDTH}; max-width: 100%;"):
             with ui.tab_panel('Aufnahme').style("width: 100%;"):
                 recording_page(client, obs_controller, settings, ui_object_container)
-            with ui.tab_panel('Download').style("width: 100%;"):
+            with ui.tab_panel('Videoarchiv').style("width: 100%;"):
                 download_page(client, filemanager)
 
 # admin landing page
