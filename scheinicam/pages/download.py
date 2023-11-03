@@ -6,6 +6,7 @@ from filemanager import VideoFile, Filemanager, FileContainer
 import threading
 import datetime
 import asyncio
+import os
 
 class TimeSelectContainer:
     def __init__(self):
@@ -54,6 +55,7 @@ async def download_dialog(file: VideoFile, from_time: datetime.time, to_time: da
             await asyncio.sleep(0.1)
             path = await file.get_subclip(from_time, to_time)
             waiting.set_visibility(False)
+            ui.label(f"Dateigröße: {get_filesize_string(path)}")
             def download():
                 dialog.close()
                 ui.download(path, file.get_download_filename(from_time))
@@ -183,3 +185,17 @@ def download_page3(client: Client, filemanager: Filemanager):
         ui.button("Herunterladen", on_click=dialog)
     
     new_file_selected(None)
+
+def get_filesize_string(path: str):
+    '''Returns the filesize as a string'''
+    size = os.path.getsize(path)
+    if size < 1024:
+        return f"{size} B"
+    elif size < 1024**2:
+        return f"{size/1024:.2f} KB"
+    elif size < 1024**3:
+        return f"{size/1024**2:.2f} MB"
+    elif size < 1024**4:
+        return f"{size/1024**3:.2f} GB"
+    else:
+        return f"{size/1024**4:.2f} TB"
