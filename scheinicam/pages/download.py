@@ -87,59 +87,51 @@ def preview(container: TimeSelectContainer):
 
 def time_selector3(container: TimeSelectContainer):
     '''Creates a time selector for the download dialog'''
-    dialog = ui.dialog()
+    range = container.duration()
+    card = ui.card().tight().classes("w-full")
+    with card:
+        preview_update = preview(container)
 
-    ui.button("Zeit wählen", on_click=dialog.open)
-    ui.label().bind_text_from(container, "time", backward=lambda x: (container.start_time + datetime.timedelta(seconds=x)).strftime("Gewählt: %H:%M:%S Uhr"))
+    with card, ui.card_section().classes("w-full"):
+        with ui.element("div").classes("w-full"):
+            label = ui.label()\
+                .bind_text_from(container, "time", backward=lambda x: "Gewählte Zeit: " + (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S Uhr"))\
+                .classes("text-subtitle2").style("margin-bottom: 1em;")
 
-    with dialog:
-        range = container.duration()
-        card = ui.card().tight().classes("w-full")
-        with card:
-            preview_update = preview(container)
-
-        with card, ui.card_section().classes("w-full"):
-            with ui.element("div").classes("w-full"):
-                label = ui.label()\
-                    .bind_text_from(container, "time", backward=lambda x: "Gewählte Zeit: " + (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S Uhr"))\
-                    .classes("text-subtitle2").style("margin-bottom: 1em;")
-
-            def move_label(event: ValueChangeEventArguments = None):
-                if event is None:
-                    val = 100*(slider.value/range)
-                else:
-                    val = 100*(event.value/range)
-                translate = "transform: translate(-100%, 0%);" if val > 80 else\
-                            "transform: translate(0%, 0%);" if val < 20 else\
-                            "transform: translate(-50%, 0%);"
-                badge.style(f"left: {val}%; "+translate)
-                # preview_update() TODO: Automatic Update without stuttering
-            with ui.grid(columns=4).classes("w-full").style("margin-bottom: 1em;"):
-                def add_time(n: int):
-                    container.time += n
-                    if container.time < 0:
-                        container.time = 0
-                    elif container.time > range:
-                        container.time = range
-                ui.button("-1min", on_click=lambda: add_time(-60))
-                ui.button("-10s", on_click=lambda: add_time(-10))
-                ui.button("+10s", on_click=lambda: add_time(10))
-                ui.button("+1min", on_click=lambda: add_time(60))
-            slider = ui.slider(min=0, max=range, step=1, value=0, on_change=move_label)\
-                .bind_value(container, "time")\
-                .props("marker-labels")
-            print(slider.slots)
-            with slider.add_slot("marker-label-group"):
-                with ui.row().classes("w-full"):
-                    ui.label(container.start_time.strftime("%H:%M Uhr"))
-                    ui.element("div").classes("grow")
-                    ui.label(container.end_time.strftime("%H:%M Uhr"))
-                #copilot, please make position relative to center
-                badge = ui.badge('', color='red').props('floating').style('position: relative; left: 50%; top: 0%; transform: translate(-50%, 0%);')\
-                    .bind_text_from(container, "time", backward=lambda x: (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
-            move_label()
-            #add ok button to close dialog
-            ui.button("Ok", on_click=dialog.close).style("margin-top: 1em;").classes("w-full")
+        def move_label(event: ValueChangeEventArguments = None):
+            if event is None:
+                val = 100*(slider.value/range)
+            else:
+                val = 100*(event.value/range)
+            translate = "transform: translate(-100%, 0%);" if val > 80 else\
+                        "transform: translate(0%, 0%);" if val < 20 else\
+                        "transform: translate(-50%, 0%);"
+            badge.style(f"left: {val}%; "+translate)
+            # preview_update() TODO: Automatic Update without stuttering
+        with ui.grid(columns=4).classes("w-full").style("margin-bottom: 1em;"):
+            def add_time(n: int):
+                container.time += n
+                if container.time < 0:
+                    container.time = 0
+                elif container.time > range:
+                    container.time = range
+            ui.button("-1min", on_click=lambda: add_time(-60))
+            ui.button("-10s", on_click=lambda: add_time(-10))
+            ui.button("+10s", on_click=lambda: add_time(10))
+            ui.button("+1min", on_click=lambda: add_time(60))
+        slider = ui.slider(min=0, max=range, step=1, value=0, on_change=move_label)\
+            .bind_value(container, "time")\
+            .props("marker-labels")
+        print(slider.slots)
+        with slider.add_slot("marker-label-group"):
+            with ui.row().classes("w-full"):
+                ui.label(container.start_time.strftime("%H:%M Uhr"))
+                ui.element("div").classes("grow")
+                ui.label(container.end_time.strftime("%H:%M Uhr"))
+            #copilot, please make position relative to center
+            badge = ui.badge('', color='red').props('floating').style('position: relative; left: 50%; top: 0%; transform: translate(-50%, 0%);')\
+                .bind_text_from(container, "time", backward=lambda x: (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
+        move_label()
 
     
 
@@ -161,12 +153,14 @@ def download_page3(client: Client, filemanager: Filemanager):
         time_selected_end.set_from_file(filecontainer.get_file(), True)
         with start_card:
             start_card.clear()
+            ui.label("Hier musst du mithilfe des Schiebereglers die Startzeit deines Auftritts auswählen. Mit den Buttons kannst du kleine Schritte vor und zurück gehen. Mit dem Button \"Vorschau aktualisieren\" kannst du dir das Bild an der von dir ausgewählten Uhrzeit angucken.")
             time_selector3(time_selected_start)
             with ui.stepper_navigation():
                 ui.button('Weiter', on_click=stepper.next, color="green")
                 ui.button('Zurück', on_click=stepper.previous).props('flat')
         with end_card:
             end_card.clear()
+            ui.label("Hier musst du mithilfe des Schiebereglers die Endzeit deines Auftritts auswählen. Mit den Buttons kannst du kleine Schritte vor und zurück gehen. Mit dem Button \"Vorschau aktualisieren\" kannst du dir das Bild an der von dir ausgewählten Uhrzeit angucken.")
             time_selector3(time_selected_end)
             with ui.stepper_navigation():
                 ui.button('Weiter', on_click=stepper.next, color="green")
@@ -176,17 +170,21 @@ def download_page3(client: Client, filemanager: Filemanager):
     async def dialog():
         await download_dialog(filecontainer.get_file(), time_selected_start.time_as_datetime().time(), time_selected_end.time_as_datetime().time())
     
-    with ui.stepper().props('vertical').classes('w-full') as stepper:
+    with ui.stepper().props('vertical flat').classes('w-full') as stepper:
         with ui.step('Vorstellung auswählen', icon='videocam'):
             ui.label("Hier musst du den Tag auswählen, von dem du das Video herunterladen willst. Standardmäßig wird das neueste Video ausgewählt.")
-            ui.select(filemanager.get_file_dict(), value=filecontainer.get_file(), on_change=new_file_selected).classes("w-full").bind_value(filecontainer, "file")
+            with ui.card().classes("w-full"):
+                ui.label("Aufnahme auswählen").classes("text-subtitle2")
+                ui.select(filemanager.get_file_dict(), value=filecontainer.get_file(), on_change=new_file_selected).classes("w-full").bind_value(filecontainer, "file")
             with ui.stepper_navigation():
                 ui.button('Weiter', on_click=stepper.next, color="green")
         start_card = ui.step('Startzeit auswählen', icon='timer')
         end_card = ui.step('Endzeit auswählen', icon='timer')
         with ui.step('Video exportieren', icon='file_download'):
-            ui.button("Exportieren", on_click=dialog)
             ui.label("Wenn du auf den Button klickst, wird dein Video automatisch vom Server zugeschnitten. Anschließend kannst du es herunterladen.")
+            with ui.card().classes("w-full"):
+                ui.label("Video exportieren").classes("text-subtitle2")
+                ui.button("Exportieren", on_click=dialog).classes("w-full")
             with ui.stepper_navigation():
                 ui.button('Zurück', on_click=stepper.previous).props('flat')
     
