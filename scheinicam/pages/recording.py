@@ -2,6 +2,7 @@ from nicegui import ui, app, Client
 from obscontroller import ObsController
 from settings import Settings
 from ui_object_container import UiObjectContainer
+from datetime import datetime, timedelta
 
 def recording_page(client: Client, obs_controller: ObsController, settings: Settings, ui_object_container: UiObjectContainer):
     '''Page for recording'''
@@ -16,6 +17,12 @@ def recording_page(client: Client, obs_controller: ObsController, settings: Sett
             ui.spinner()
             ui.label('Verbinde mit OBS')
     connecting_card.bind_visibility_from(obs_controller, 'connected', backward=lambda x: not x)
+
+    # display current time
+    time_card = ui.card().classes("w-full")
+    with time_card:
+        clock_label = ui.label("").classes("text-xl")
+        ui.timer(1, lambda: clock_label.set_text(datetime.now().strftime("Zeit: %H:%M:%S Uhr")))
 
     recording_card = ui.card().tight().classes("w-full")
     with recording_card:
