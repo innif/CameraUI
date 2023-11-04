@@ -1,0 +1,1 @@
+Hier musst du mithilfe des Schiebereglers die Startzeit deines Auftritts auswählen. Mit den Buttons kannst du kleine Schritte vor und zurück gehen. Mit dem Button "_Vorschau aktualisieren_" kannst du dir das Bild an der von dir ausgewählten Uhrzeit angucken.

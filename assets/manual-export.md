@@ -1,0 +1,1 @@
+Wenn du auf den Button "_Exportieren_" klickst, wird dein Video automatisch vom Server zugeschnitten. Anschließend kannst du es herunterladen.

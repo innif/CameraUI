@@ -155,14 +155,14 @@ def download_page3(client: Client, filemanager: Filemanager):
         time_selected_end.set_from_file(filecontainer.get_file(), True)
         with start_card:
             start_card.clear()
-            ui.label("Hier musst du mithilfe des Schiebereglers die Startzeit deines Auftritts auswählen. Mit den Buttons kannst du kleine Schritte vor und zurück gehen. Mit dem Button \"Vorschau aktualisieren\" kannst du dir das Bild an der von dir ausgewählten Uhrzeit angucken.")
+            ui.markdown(open("assets/manual-starttime.md", encoding="utf-8").read())
             time_selector3(time_selected_start)
             with ui.stepper_navigation():
                 ui.button('Weiter', on_click=stepper.next, color="green")
                 ui.button('Zurück', on_click=stepper.previous).props('flat')
         with end_card:
             end_card.clear()
-            ui.label("Hier musst du mithilfe des Schiebereglers die Endzeit deines Auftritts auswählen. Mit den Buttons kannst du kleine Schritte vor und zurück gehen. Mit dem Button \"Vorschau aktualisieren\" kannst du dir das Bild an der von dir ausgewählten Uhrzeit angucken.")
+            ui.markdown(open("assets/manual-endtime.md", encoding="utf-8").read())
             time_selector3(time_selected_end)
             with ui.stepper_navigation():
                 ui.button('Weiter', on_click=stepper.next, color="green")
@@ -178,7 +178,7 @@ def download_page3(client: Client, filemanager: Filemanager):
             stepper.next()
             with download_step:
                 download_step.clear()
-                ui.label("Dein Video wurde exportiert und du kannst es jetzt herunterladen. Dies kann einige Minuten dauern. Solange musst du mit dem WiFi in der Scheinbar verbunden bleiben. Am schnellsten funktioniert der Download in der Nähe des Tresens. Wenn mehrere Personen paralel Videos herunterladen, ist der Download entsprechend langsamer. Nach dem Download findest du das Video in deinem Downloads-Ordner.")
+                ui.markdown(open("assets/manual-download.md", encoding="utf-8").read())
                 ui.label(f"Dateigröße: {get_filesize_string(path)}")
                 def download():
                     ui.download(path, file.get_download_filename(from_time))
@@ -189,7 +189,7 @@ def download_page3(client: Client, filemanager: Filemanager):
 
     with ui.stepper().props('vertical flat').classes('w-full') as stepper:
         with ui.step('Vorstellung auswählen', icon='event'):
-            ui.label("Hier musst du den Tag auswählen, von dem du das Video herunterladen willst. Standardmäßig wird das neueste Video ausgewählt.")
+            ui.markdown(open("assets/manual-select.md", encoding="utf-8").read())
             with ui.card().classes("w-full"):
                 ui.label("Aufnahme auswählen").classes("text-subtitle2")
                 ui.select(filemanager.get_file_dict(), value=filecontainer.get_file(), on_change=new_file_selected).classes("w-full").bind_value(filecontainer, "file")
@@ -198,7 +198,7 @@ def download_page3(client: Client, filemanager: Filemanager):
         start_card = ui.step('Startzeit auswählen', icon='schedule')
         end_card = ui.step('Endzeit auswählen', icon='browse_gallery')
         with ui.step('Video exportieren', icon='movie'):
-            ui.label("Wenn du auf den Button \"Exportieren\" klickst, wird dein Video automatisch vom Server zugeschnitten. Anschließend kannst du es herunterladen.")
+            ui.markdown(open("assets/manual-export.md", encoding="utf-8").read())
             # with ui.card().classes("w-full"):
             #     ui.label("Video exportieren").classes("text-subtitle2")
             with ui.stepper_navigation():
