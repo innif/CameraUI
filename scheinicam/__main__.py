@@ -50,9 +50,10 @@ def index(client: Client):
             ui.tab('Aufnahme', icon='videocam')
             ui.tab('Videoarchiv', icon='file_download')
         # Content
-        with ui.tab_panels(tabs, value='Aufnahme').style(f"width: {WIDTH}; max-width: 100%;"):
+        with ui.tab_panels(tabs, value='Aufnahme').style(f"width: {WIDTH}; max-width: 100%;") as panels:
             with ui.tab_panel('Aufnahme').style("width: 100%;"):
                 recording_page(client, obs_controller, settings, ui_object_container)
+                ui.button("Zum Download-Bereich", on_click=lambda: panels.set_value('Videoarchiv')).classes("w-full")
             with ui.tab_panel('Videoarchiv').style("width: 100%; padding: 0em;"):
                 download_page(client, filemanager)
 
