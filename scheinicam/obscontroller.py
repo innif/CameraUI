@@ -3,6 +3,7 @@ import time
 from filemanager import VideoFile
 import threading
 import logging
+from nicegui import run
 
 class ObsController:
     def __init__(self, settings = None, host=None, port=None, password=None): # TODO: Error handling
@@ -81,12 +82,12 @@ class ObsController:
         logging.info("Recording stopped")
         return self.file
 
-    def get_screenshot(self):
+    async def get_screenshot(self):
         '''Get screenshot'''
         if not self.connected:
             return None
         try:
-            out = self.client.get_source_screenshot(name="main", img_format="jpg", width=512, height=288, quality=50)
+            out = await run.io_bound(self.client.get_source_screenshot, name="main", img_format="jpg", width=512, height=288, quality=50)
             return out.image_data
         except Exception as e:
             self.connected = False

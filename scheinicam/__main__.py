@@ -73,23 +73,21 @@ async def download(client: Client):
             
 async def update_preview():
     '''Regularly updates the preview image'''
-    while True:
-        try:
-            if obs_controller.muted:
-                ui_object_container.html_preview = "<div style=\"padding:1em;\"><p>Aufnahme pausiert auf Wunsch eines Künstlers</p></div>"
-                continue
-            img_data = await obs_controller.get_screenshot()
-            if img_data is None:
-                ui_object_container.html_preview = "<div style=\"padding:1em;\"><p>Keine Verbindung zu OBS</p></div>"
-            else:
-                ui_object_container.html_preview = f"<img src=\"{img_data}\" width=\"100%\"/>"
-        except Exception as e:
-            logging.exception(e)
-            logging.error(f"Could not update preview")
-        time.sleep(5)
+    try:
+        if obs_controller.muted:
+            ui_object_container.html_preview = "<div style=\"padding:1em;\"><p>Aufnahme pausiert auf Wunsch eines Künstlers</p></div>"
+            return
+        img_data = await obs_controller.get_screenshot()
+        if img_data is None:
+            ui_object_container.html_preview = "<div style=\"padding:1em;\"><p>Keine Verbindung zu OBS</p></div>"
+        else:
+            ui_object_container.html_preview = f"<img src=\"{img_data}\" width=\"100%\"/>"
+    except Exception as e:
+        logging.exception(e)
+        logging.error(f"Could not update preview")
 
 # create thread for updating preview
-asyncio.create_task(update_preview())
+ui.timer(5, update_preview)
 
 def auto_shutdown():
     '''Shuts down the computer at the time given in settings object'''

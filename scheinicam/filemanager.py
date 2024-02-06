@@ -1,5 +1,5 @@
 import datetime
-from nicegui import ui, run
+from nicegui import ui, run, app
 import json
 import os
 import moviepy.editor as mp 
@@ -10,6 +10,19 @@ from io import BytesIO
 import base64
 import logging
 import asyncio
+
+def get_base64_img(cv2_clip, seconds):
+    print("cv2 operation")
+    # get frame
+    cv2_clip.set(cv2.CAP_PROP_POS_MSEC, seconds * 1000)
+    _, frame = cv2_clip.read()
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    frame = cv2.resize(frame, (800, 450))
+    # convert to frame base64 with jpg encoding
+    img = Image.fromarray(frame, 'RGB')
+    buff = BytesIO()
+    img.save(buff, format="JPEG")
+    return base64.b64encode(buff.getvalue()).decode("utf-8")
 
 class VideoFile:
     '''Represents a video file'''
@@ -77,6 +90,7 @@ class VideoFile:
     async def get_frame_at(self, time: datetime.time):
         '''Get frame at time, output as base64'''
         try:
+            print("get frame at time")
             # generate video clip if not already generated or if video is still recording and clip is older than 10 seconds
             if self.clip is None or (self.end_time is None and self.get_age() > self.clip.duration + 10):
                 print("generate video clip")
@@ -86,19 +100,11 @@ class VideoFile:
             timestamp_seconds = (timestamp - self.start_time).total_seconds()
             # validate clip and timestamp
             if self.clip is None or timestamp_seconds < 0 or timestamp_seconds > self.clip.duration:
+                print("none")
                 return None
-            def cv2_operation():
-                # get frame
-                self.cv_clip.set(cv2.CAP_PROP_POS_MSEC, timestamp_seconds * 1000)
-                _, frame = self.cv_clip.read()
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frame = cv2.resize(frame, (800, 450))
-                # convert to frame base64 with jpg encoding
-                img = Image.fromarray(frame, 'RGB')
-                buff = BytesIO()
-                img.save(buff, format="JPEG")
-                img_string = base64.b64encode(buff.getvalue()).decode("utf-8")
-            img_string = await run.cpu_bound(cv2_operation)
+            
+            # img_string = await run.cpu_bound(get_base64_img, self.clip, timestamp_seconds)
+            img_string = get_base64_img(self.clip, timestamp_seconds)
             # return base64 string
             return f"data:image/jpg;base64,{img_string}" 
         except Exception as e:
@@ -109,7 +115,7 @@ class VideoFile:
     async def generate_video_clip(self):
         '''Generate video clip'''
         try:
-            self.clip = await run.cpu_bound(mp.VideoFileClip, f"videos/{self.filename}.mp4", target_resolution=(300, None), audio=False)
+            self.clip = mp.VideoFileClip(f"videos/{self.filename}.mp4", target_resolution=(300, None), audio=False)
             #self.clip = self.clip.set_fps(2)
             self.cv_clip = await run.cpu_bound(cv2.VideoCapture, f"videos/{self.filename}.mp4")
         except Exception as e:
@@ -165,7 +171,7 @@ class Filemanager:
     def __init__(self):
         '''Initialize Filemanager'''
         self.files = [] # TODO: Load files from json
-        asyncio.create_task(self.scan_files())
+        app.on_startup(self.scan_files())
 
     def add_file(self, file: VideoFile):
         '''Add file to filemanager'''

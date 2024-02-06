@@ -67,8 +67,6 @@ async def export_dialog(file: VideoFile, from_time: datetime.time, to_time: date
 async def preview(container: TimeSelectContainer):
     '''Creates a preview for the time selection'''
     img = ui.image("")
-    ui.button("Vorschau Aktualisieren", on_click=update_img).style("margin-top: 1em; margin-left: 1em; margin-right: 1em;")
-    label = ui.label("Vorschau nicht möglich")
     async def update_img():
         f = container.file
         img_available = False
@@ -78,6 +76,8 @@ async def preview(container: TimeSelectContainer):
             img_available = frame is not None
         label.set_visibility(not img_available)
         img.set_visibility(img_available)
+    ui.button("Vorschau Aktualisieren", on_click=update_img).style("margin-top: 1em; margin-left: 1em; margin-right: 1em;")
+    label = ui.label("Vorschau nicht möglich")
     await update_img()
     return update_img
 
