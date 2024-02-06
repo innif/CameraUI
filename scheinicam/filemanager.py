@@ -1,5 +1,5 @@
 import datetime
-from nicegui import ui
+from nicegui import ui, run
 import json
 import os
 import moviepy.editor as mp 
@@ -9,6 +9,7 @@ from PIL import Image
 from io import BytesIO
 import base64
 import logging
+import asyncio
 
 class VideoFile:
     '''Represents a video file'''
@@ -42,14 +43,14 @@ class VideoFile:
                 ui.button("Preview", on_click=lambda: ui.open(f"videos/{self.filename}.mp4"))
                 ui.button("Download", on_click=lambda: ui.download(f"videos/{self.filename}.mp4"))
 
-    def export_as_json(self):
+    async def export_as_json(self):
         '''Export as json'''
         data = {
             "start_time": self.start_time.isoformat(),
             "end_time": self.end_time.isoformat() if self.end_time is not None else None,
             "filename": self.filename,
         }
-        json.dump(data, open(f"videos/{self.filename}.json", "w"))
+        await run.io_bound(json.dump, data, open(f"videos/{self.filename}.json", "w"))
 
     async def get_subclip(self, start: datetime.time, end: datetime.time):
         '''
@@ -58,7 +59,7 @@ class VideoFile:
         end: end time of subclip
         returns: path to subclip
         '''
-        self.generate_video_clip()
+        await self.generate_video_clip()
         start = datetime.datetime.combine(self.start_time.date(), start)
         end = datetime.datetime.combine(self.start_time.date(), end)
         # calculate start and end in seconds
@@ -70,32 +71,34 @@ class VideoFile:
         logging.info(f"subclip in range start: {start_seconds}, end: {end_seconds}")
         output_path = f"videos/subclip_{self.filename}-{start_seconds}-{end_seconds}.mp4"
         # create subclip
-        ffmpeg_extract_subclip(f"videos/{self.filename}.mp4", start_seconds, end_seconds, targetname=output_path)
+        await run.cpu_bound(ffmpeg_extract_subclip, f"videos/{self.filename}.mp4", start_seconds, end_seconds, targetname=output_path)
         return output_path
     
-    def get_frame_at(self, time: datetime.time):
+    async def get_frame_at(self, time: datetime.time):
         '''Get frame at time, output as base64'''
         try:
             # generate video clip if not already generated or if video is still recording and clip is older than 10 seconds
             if self.clip is None or (self.end_time is None and self.get_age() > self.clip.duration + 10):
                 print("generate video clip")
-                self.generate_video_clip()
+                await self.generate_video_clip()
             # calculate timestamp in seconds
             timestamp = datetime.datetime.combine(self.start_time.date(), time)
             timestamp_seconds = (timestamp - self.start_time).total_seconds()
             # validate clip and timestamp
             if self.clip is None or timestamp_seconds < 0 or timestamp_seconds > self.clip.duration:
                 return None
-            # get frame
-            self.cv_clip.set(cv2.CAP_PROP_POS_MSEC, timestamp_seconds * 1000)
-            _, frame = self.cv_clip.read()
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame = cv2.resize(frame, (800, 450))
-            # convert to frame base64 with jpg encoding
-            img = Image.fromarray(frame, 'RGB')
-            buff = BytesIO()
-            img.save(buff, format="JPEG")
-            img_string = base64.b64encode(buff.getvalue()).decode("utf-8")
+            def cv2_operation():
+                # get frame
+                self.cv_clip.set(cv2.CAP_PROP_POS_MSEC, timestamp_seconds * 1000)
+                _, frame = self.cv_clip.read()
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = cv2.resize(frame, (800, 450))
+                # convert to frame base64 with jpg encoding
+                img = Image.fromarray(frame, 'RGB')
+                buff = BytesIO()
+                img.save(buff, format="JPEG")
+                img_string = base64.b64encode(buff.getvalue()).decode("utf-8")
+            img_string = await run.cpu_bound(cv2_operation)
             # return base64 string
             return f"data:image/jpg;base64,{img_string}" 
         except Exception as e:
@@ -103,12 +106,12 @@ class VideoFile:
             logging.error("Could not load frame at time")
             return ""
     
-    def generate_video_clip(self):
+    async def generate_video_clip(self):
         '''Generate video clip'''
         try:
-            self.clip = mp.VideoFileClip(f"videos/{self.filename}.mp4", target_resolution=(300, None), audio=False)
+            self.clip = await run.cpu_bound(mp.VideoFileClip, f"videos/{self.filename}.mp4", target_resolution=(300, None), audio=False)
             #self.clip = self.clip.set_fps(2)
-            self.cv_clip = cv2.VideoCapture(f"videos/{self.filename}.mp4")
+            self.cv_clip = await run.cpu_bound(cv2.VideoCapture, f"videos/{self.filename}.mp4")
         except Exception as e:
             logging.exception(e)
             logging.error("Could not load video clip")
@@ -130,11 +133,11 @@ class VideoFile:
         '''Get download filename'''
         return "Scheinbar_{}_{}.mp4".format(self.start_time.strftime("%Y-%m-%d"), time.strftime("%H-%M"))
     
-    def stop_recording(self):
+    async def stop_recording(self):
         '''Stop recording'''
         self.clip = None
         self.end_time = datetime.datetime.now() - datetime.timedelta(seconds=1) # move end time one second back
-        self.export_as_json()
+        await self.export_as_json()
 
     def get_end_time(self):
         '''Get end time'''
@@ -142,10 +145,10 @@ class VideoFile:
             return datetime.datetime.now()
         return self.end_time
     
-    def calculate_end_time(self):
+    async def calculate_end_time(self):
         '''Calculate end time based on length of video clip'''
         if self.clip is None:
-            self.generate_video_clip()
+            await self.generate_video_clip()
         self.end_time = self.start_time + datetime.timedelta(seconds=self.clip.duration) # calculate end time based on length of video clip
         self.end_time = self.end_time - datetime.timedelta(seconds=1) # move end time one second back
 
@@ -162,32 +165,32 @@ class Filemanager:
     def __init__(self):
         '''Initialize Filemanager'''
         self.files = [] # TODO: Load files from json
-        self.scan_files()
+        asyncio.create_task(self.scan_files())
 
     def add_file(self, file: VideoFile):
         '''Add file to filemanager'''
         self.files.append(file)
         
-    def scan_files(self):
+    async def scan_files(self):
         '''scan for json files and add them to the list'''
         for filename in os.listdir("videos"):
             if filename.endswith(".json"):
-                file = self.file_from_json(f"videos/{filename}")
+                file = await self.file_from_json(f"videos/{filename}")
                 if file is None:
                     continue
                 try:
                     if file.end_time is None:
-                        file.calculate_end_time()
-                        file.export_as_json()
+                        await file.calculate_end_time()
+                        await file.export_as_json()
                     self.files.append(file)
                 except Exception as e:
                     logging.exception(e)
                     logging.error(f"Could not load file {filename}")
 
-    def file_from_json(self, filename):
+    async def file_from_json(self, filename):
         '''Create file from json'''
         try:
-            data = json.load(open(filename, "r"))
+            data = await run.io_bound(json.load, open(filename, "r"))
             start_time = datetime.datetime.fromisoformat(data["start_time"])
             end_time = None if data["end_time"] is None else datetime.datetime.fromisoformat(data["end_time"])
             file = VideoFile(start_time=start_time, end_time=end_time, filename=data["filename"])

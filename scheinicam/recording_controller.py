@@ -13,7 +13,7 @@ class RecordingController:
         self.filemanager = filemanager
         self.auto_started = False
 
-    def auto_record(self):
+    async def auto_record(self):
         ''' Automatically start and stop recording based on settings '''
         if not self.obs_controller.connected:
             return
@@ -21,15 +21,15 @@ class RecordingController:
         if now > self.settings.start_time and now < self.settings.end_time and datetime.datetime.now().weekday() in self.settings.weekdays:
             if not self.auto_started and not self.obs_controller.recording:
                 logging.info("Starting recording")
-                if self.start_record():
+                if await self.start_record():
                     self.auto_started = True
         else:
             if self.obs_controller.recording and self.auto_started:
                 logging.info("Stopping recording")
-                if self.stop_record():
+                if await self.stop_record():
                     self.auto_started = False
 
-    def start_record(self):
+    async def start_record(self):
         ''' Start recording '''
         if not self.obs_controller.connected or self.obs_controller.recording:
             logging.warning("Could not start recording because OBS is not connected or already recording")
@@ -46,7 +46,7 @@ class RecordingController:
                 logging.error("Could not start recording because file is None")
                 return False
             self.filemanager.add_file(file)
-            file.export_as_json()
+            await file.export_as_json()
             logging.info(f"Started recording {file.filename}")
         except Exception as e:
             logging.exception(e)
@@ -54,14 +54,14 @@ class RecordingController:
             return False
         return True
 
-    def stop_record(self):
+    async def stop_record(self):
         ''' Stop recording '''
         if not self.obs_controller.connected or not self.obs_controller.recording:
             logging.warning("Could not stop recording because OBS is not connected or not recording")
             return False
         try:
             self.obs_controller.stop()
-            self.obs_controller.file.stop_recording()
+            await self.obs_controller.file.stop_recording()
             logging.info(f"Stopped recording {self.obs_controller.file.filename}")
         except Exception as e:
             logging.exception(e)

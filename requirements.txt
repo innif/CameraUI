@@ -1,4 +1,4 @@
-nicegui==1.2.14
+nicegui==1.4.13
 obsws_python
 moviepy
 opencv-python

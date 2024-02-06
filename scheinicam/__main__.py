@@ -1,4 +1,4 @@
-from nicegui import ui, app, Client
+from nicegui import ui, app, Client, run
 import time
 import threading
 import datetime
@@ -17,6 +17,7 @@ from pages.admin import admin_page
 from pages.recording import recording_page
 
 import locale
+import asyncio
 
 # constants
 WIDTH = "50em"
@@ -43,7 +44,7 @@ app.add_static_files('/logs', 'logs')
               
 # main landing page
 @ui.page("/")
-def index(client: Client):
+async def index(client: Client):
     '''Main page of the web interface'''
     with ui.column().style("margin: 0em; width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;"):
         with ui.tabs().style(f"width: {WIDTH}; max-width: 100%; display: block;") as tabs: 
@@ -55,29 +56,29 @@ def index(client: Client):
                 recording_page(client, obs_controller, settings, ui_object_container)
                 ui.button("Zum Download-Bereich", on_click=lambda: panels.set_value('Videoarchiv')).classes("w-full")
             with ui.tab_panel('Videoarchiv').style("width: 100%; padding: 0em;"):
-                download_page(client, filemanager)
+                await download_page(client, filemanager)
 
 # admin landing page
 @ui.page("/admin")
-def admin(client: Client):
+async def admin(client: Client):
     '''Admin page of the web interface'''
-    admin_page(obs_controller, filemanager, ui_object_container, recording_controller)
+    await admin_page(obs_controller, filemanager, ui_object_container, recording_controller)
 
 @ui.page("/download")
-def download(client: Client):
+async def download(client: Client):
     with ui.grid(columns=2):
         for file, descriptor in filemanager.get_file_dict().items():
             ui.label(descriptor).style("margin-right: 1em;")
             ui.button("Download", on_click=lambda: ui.download(f"videos/{file.filename}.mp4"))
             
-def update_preview():
+async def update_preview():
     '''Regularly updates the preview image'''
     while True:
         try:
             if obs_controller.muted:
                 ui_object_container.html_preview = "<div style=\"padding:1em;\"><p>Aufnahme pausiert auf Wunsch eines Künstlers</p></div>"
                 continue
-            img_data = obs_controller.get_screenshot()
+            img_data = await obs_controller.get_screenshot()
             if img_data is None:
                 ui_object_container.html_preview = "<div style=\"padding:1em;\"><p>Keine Verbindung zu OBS</p></div>"
             else:
@@ -88,8 +89,7 @@ def update_preview():
         time.sleep(5)
 
 # create thread for updating preview
-t = threading.Thread(target=update_preview)
-t.start()
+asyncio.create_task(update_preview())
 
 def auto_shutdown():
     '''Shuts down the computer at the time given in settings object'''
