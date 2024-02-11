@@ -152,6 +152,7 @@ async def download_page3(client: Client, filemanager: Filemanager):
         with start_card:
             start_card.clear()
             ui.markdown(open("assets/manual-starttime.md", encoding="utf-8").read())
+            ui.label("Startzeit").classes("text-xl")
             await time_selector3(time_selected_start)
             with ui.stepper_navigation():
                 ui.button('Weiter', on_click=stepper.next, color="green")
@@ -159,6 +160,7 @@ async def download_page3(client: Client, filemanager: Filemanager):
         with end_card:
             end_card.clear()
             ui.markdown(open("assets/manual-endtime.md", encoding="utf-8").read())
+            ui.label("Endzeit").classes("text-xl")
             await time_selector3(time_selected_end)
             with ui.stepper_navigation():
                 ui.button('Weiter', on_click=stepper.next, color="green")
