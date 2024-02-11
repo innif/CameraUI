@@ -10,6 +10,7 @@ from io import BytesIO
 import base64
 import logging
 import asyncio
+import time
 
 def get_base64_img(cv2_clip, seconds):
     print("cv2 operation")
@@ -37,6 +38,7 @@ class VideoFile:
         else:
             self.filename = filename
         self.clip = None
+        self.cv_clip = None
         self.end_time = end_time # end time None means that the video is still recording
 
     def _generate_filename(self):
@@ -104,7 +106,7 @@ class VideoFile:
                 return None
             
             # img_string = await run.cpu_bound(get_base64_img, self.clip, timestamp_seconds)
-            img_string = get_base64_img(self.clip, timestamp_seconds)
+            img_string = get_base64_img(self.cv_clip, timestamp_seconds)
             # return base64 string
             return f"data:image/jpg;base64,{img_string}" 
         except Exception as e:
@@ -115,9 +117,11 @@ class VideoFile:
     async def generate_video_clip(self):
         '''Generate video clip'''
         try:
-            self.clip = mp.VideoFileClip(f"videos/{self.filename}.mp4", target_resolution=(300, None), audio=False)
+            logging.info(f"Generating video clip: {self.filename}")
+            self.clip = mp.VideoFileClip(f"videos/{self.filename}.mp4", target_resolution=(300, None), resize_algorithm='fast_bilinear', audio=False)
             #self.clip = self.clip.set_fps(2)
-            self.cv_clip = await run.cpu_bound(cv2.VideoCapture, f"videos/{self.filename}.mp4")
+            self.cv_clip = cv2.VideoCapture(f"videos/{self.filename}.mp4")
+            # TODO: run in seperate Thread
         except Exception as e:
             logging.exception(e)
             logging.error("Could not load video clip")
