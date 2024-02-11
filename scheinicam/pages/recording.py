@@ -27,7 +27,7 @@ def recording_page(client: Client, obs_controller: ObsController, settings: Sett
     recording_card = ui.card().tight().classes("w-full")
     with recording_card:
         # Show Camera Preview
-        preview = ui.html("")
+        preview = ui.html("").classes("w-full")
         preview.bind_content_from(ui_object_container, 'html_preview')
         with ui.card_section():
             with ui.row().style('align-items: center'):

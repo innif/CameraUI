@@ -1,5 +1,5 @@
-nicegui==1.2.14
-obsws_python
-moviepy
-opencv-python
-zeroconf
+nicegui==1.4.13
+obsws_python==1.5.1
+moviepy==1.0.3
+opencv-python==4.8.1.78
+zeroconf==0.69.0

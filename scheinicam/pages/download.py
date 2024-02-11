@@ -53,9 +53,7 @@ async def export_dialog(file: VideoFile, from_time: datetime.time, to_time: date
             with waiting:
                 ui.spinner()
                 ui.label("Video wird exportiert...")
-            await asyncio.sleep(0.1)
             path = await file.get_subclip(from_time, to_time)
-            await asyncio.sleep(0.1)
             dialog.close()
             return path
     except Exception as e:
@@ -66,29 +64,29 @@ async def export_dialog(file: VideoFile, from_time: datetime.time, to_time: date
         dialog.close()
         return None
 
-def preview(container: TimeSelectContainer):
+async def preview(container: TimeSelectContainer):
     '''Creates a preview for the time selection'''
     img = ui.image("")
-    ui.button("Vorschau Aktualisieren", on_click=lambda: update_img()).style("margin-top: 1em; margin-left: 1em; margin-right: 1em;")
-    label = ui.label("Vorschau nicht möglich")
-    def update_img():
+    async def update_img():
         f = container.file
         img_available = False
         if f is not None:
-            frame = f.get_frame_at(container.time_as_datetime().time())
+            frame = await f.get_frame_at(container.time_as_datetime().time())
             img.set_source(frame)
             img_available = frame is not None
         label.set_visibility(not img_available)
         img.set_visibility(img_available)
-    update_img()
+    ui.button("Vorschau Aktualisieren", on_click=update_img).style("margin-top: 1em; margin-left: 1em; margin-right: 1em;")
+    label = ui.label("Vorschau nicht möglich")
+    await update_img()
     return update_img
 
-def time_selector3(container: TimeSelectContainer):
+async def time_selector3(container: TimeSelectContainer):
     '''Creates a time selector for the download dialog'''
     range = container.duration()
     card = ui.card().tight().classes("w-full")
     with card:
-        preview_update = preview(container)
+        preview_update = await preview(container) # caution: this is a coroutine
 
     with card, ui.card_section().classes("w-full"):
         with ui.element("div").classes("w-full"):
@@ -135,9 +133,7 @@ def time_selector3(container: TimeSelectContainer):
                 .bind_text_from(container, "time", backward=lambda x: (container.start_time + datetime.timedelta(seconds=x)).strftime("%H:%M:%S"))
         move_label()
 
-    
-
-def download_page3(client: Client, filemanager: Filemanager):
+async def download_page3(client: Client, filemanager: Filemanager):
     '''Creates the download page'''
     # setup ui elements to specify start and endtime for video crop
     filecontainer = FileContainer(filemanager.newest_file())
@@ -149,21 +145,21 @@ def download_page3(client: Client, filemanager: Filemanager):
     time_selected_start = TimeSelectContainer()
     time_selected_end = TimeSelectContainer()
     
-    def new_file_selected(event: ValueChangeEventArguments):
+    async def new_file_selected(event: ValueChangeEventArguments):
         ''' Called when a new file is selected '''
         time_selected_start.set_from_file(filecontainer.get_file())
         time_selected_end.set_from_file(filecontainer.get_file(), True)
         with start_card:
             start_card.clear()
             ui.markdown(open("assets/manual-starttime.md", encoding="utf-8").read())
-            time_selector3(time_selected_start)
+            await time_selector3(time_selected_start)
             with ui.stepper_navigation():
                 ui.button('Weiter', on_click=stepper.next, color="green")
                 ui.button('Zurück', on_click=stepper.previous).props('flat')
         with end_card:
             end_card.clear()
             ui.markdown(open("assets/manual-endtime.md", encoding="utf-8").read())
-            time_selector3(time_selected_end)
+            await time_selector3(time_selected_end)
             with ui.stepper_navigation():
                 ui.button('Weiter', on_click=stepper.next, color="green")
                 ui.button('Zurück', on_click=stepper.previous).props('flat')
@@ -206,7 +202,7 @@ def download_page3(client: Client, filemanager: Filemanager):
                 ui.button('Zurück', on_click=stepper.previous).props('flat')
         download_step = ui.step('Video herunterladen', icon='file_download')
     
-    new_file_selected(None)
+    await new_file_selected(None)
 
 def get_filesize_string(path: str):
     '''Returns the filesize as a string'''
