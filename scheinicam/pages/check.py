@@ -21,4 +21,5 @@ async def check_page(obs_controller: ObsController, filemanager: Filemanager, ui
                 ui.label("Audio Fehler!!!").classes("text-xl text-negative")
             preview = ui.html("")
             preview.bind_content_from(ui_object_container, 'html_preview')
+            ui.button("Kamera neu laden", on_click=obs_controller.reload_camera).classes("w-full")
             ui.button("Neu testen", on_click= lambda: ui.run_javascript("location.reload()")).classes("w-full")
