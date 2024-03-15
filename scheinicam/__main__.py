@@ -15,6 +15,7 @@ from zeroconfserver import ZeroconfServer
 from pages.download import download_page3 as download_page
 from pages.admin import admin_page
 from pages.recording import recording_page
+from pages.check import check_page
 
 import locale
 import asyncio
@@ -60,9 +61,15 @@ async def index(client: Client):
 
 # admin landing page
 @ui.page("/admin")
-async def admin(client: Client):
+def admin(client: Client):
     '''Admin page of the web interface'''
-    await admin_page(obs_controller, filemanager, ui_object_container, recording_controller)
+    admin_page(obs_controller, filemanager, ui_object_container, recording_controller)
+
+# admin landing page
+@ui.page("/check")
+async def check(client: Client):
+    '''Admin page of the web interface'''
+    await check_page(obs_controller, filemanager, ui_object_container, recording_controller)
 
 @ui.page("/download")
 async def download(client: Client):
@@ -87,7 +94,7 @@ async def update_preview():
         logging.error(f"Could not update preview")
 
 # create thread for updating preview
-ui.timer(5, update_preview)
+ui.timer(1, update_preview)
 
 def auto_shutdown():
     '''Shuts down the computer at the time given in settings object'''

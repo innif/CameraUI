@@ -4,6 +4,7 @@ from filemanager import VideoFile
 import threading
 import logging
 from nicegui import run
+import asyncio
 
 class ObsController:
     def __init__(self, settings = None, host=None, port=None, password=None): # TODO: Error handling
@@ -22,6 +23,7 @@ class ObsController:
                 logging.exception(e)
                 logging.error("Error loading OBS settings")
         self.client = None
+        self.event_client = None
         self.recording = False
         self.preview = ""
         self.file = None
@@ -38,6 +40,7 @@ class ObsController:
         '''Try to connect to OBS'''
         try:
             self.client = obs.ReqClient(host=host, port=port, password=password)
+            self.event_client = obs.EventClient(host=host, port=port, password=password, subs=obs.Subs.INPUTVOLUMEMETERS)
             status = self.client.get_record_status()
             self.recording = status.output_active
             self.connected = True
@@ -147,7 +150,32 @@ class ObsController:
             logging.exception(e)
             logging.error("Error disabling camera")
             raise Exception("Error disabling camera")
-        
+    
+    async def check_audio(self):
+        '''get audio sources'''
+        if not self.connected:
+            return False
+        try:
+            vol = {"min": 1, "max": 0}
+            def on_input_volume_meters(data):
+                for source in data.inputs:
+                    if source.get("inputName") == "Camera":
+                        try:
+                            val = source.get("inputLevelsMul")[0][0]
+                        except:
+                            continue
+                        if val < vol["min"]:
+                            vol["min"] = val
+                        if val > vol["max"]:
+                            vol["max"] = val
+            self.event_client.callback.register(on_input_volume_meters)
+            await asyncio.sleep(2)
+            self.event_client.callback.deregister(on_input_volume_meters)
+            return vol["max"] > vol["min"]
+        except Exception as e:
+            logging.exception(e)
+            logging.error("Error checking audio")
+            raise False
 
     def __del__(self):
         '''Destructor'''

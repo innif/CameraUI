@@ -11,7 +11,7 @@ def delete_logfiles():
         if file.endswith(".log"):
             os.remove(f"logs/{file}")
 
-async def admin_page(obs_controller: ObsController, filemanager: Filemanager, ui_object_container: UiObjectContainer, recording_controller: RecordingController):
+def admin_page(obs_controller: ObsController, filemanager: Filemanager, ui_object_container: UiObjectContainer, recording_controller: RecordingController):
     ''' Admin page of the web interface '''
     with ui.column().style("margin: 0em; width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;"):
         # Add Identifier showing if Recording is muted
