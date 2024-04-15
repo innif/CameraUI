@@ -30,13 +30,9 @@ logging.basicConfig(filename=f'logs/log{datetime.datetime.now().strftime("%y-%m-
 # create objects
 settings = Settings()
 obs_controller = ObsController(settings=settings)
-filemanager = Filemanager()
+filemanager = Filemanager(delete_old_files_age=settings.delete_age)
 ui_object_container = UiObjectContainer()
 recording_controller = RecordingController(obs_controller, settings, filemanager)
-
-# delete old files
-filemanager.delete_files_older_than(settings.delete_age)
-filemanager.delete_subclips()
 
 # add static folders
 app.add_static_files('/videos', 'videos')

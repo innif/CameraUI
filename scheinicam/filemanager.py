@@ -172,10 +172,16 @@ class VideoFile:
             self.clip.close()
 
 class Filemanager:
-    def __init__(self):
+    def __init__(self, delete_old_files_age: datetime.timedelta = None):
         '''Initialize Filemanager'''
         self.files = [] # TODO: Load files from json
-        app.on_startup(self.scan_files())
+        app.on_startup(self.startup(delete_old_files_age))
+
+    async def startup(self, age: datetime.timedelta):
+        await self.scan_files()
+        if age is not None:
+            self.delete_files_older_than(age)
+            self.delete_subclips()
 
     def add_file(self, file: VideoFile):
         '''Add file to filemanager'''
@@ -238,6 +244,7 @@ class Filemanager:
     def delete_files_older_than(self, age: datetime.timedelta):
         '''Delete files older than age'''
         for file in self.files:
+            logging.info(f"Checking file {file}")
             if file.start_time < datetime.datetime.now() - age:
                 logging.info(f"Deleting file {file}")
                 self.delete_file(file)
