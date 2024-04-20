@@ -36,12 +36,13 @@ def admin_page(obs_controller: ObsController, filemanager: Filemanager, ui_objec
             ui.button("Kamera neu laden", color="blue", on_click=obs_controller.reload_camera).classes("w-full").style("margin-bottom: 1em;")
             ui.button("Computer herunterfahren", color="red", on_click=lambda: os.system("shutdown /s /t 1")).classes("w-full").style("margin-bottom: 1em;")
         # add section to view and delete logfiles
-        with ui.expansion("Logfiles").classes("w-full").style("max-width: 600px;"):
-            with ui.column():
-                for file in os.listdir("logs"):
-                    if file.endswith(".log"):
-                        ui.link(file + "\n", f"logs/{file}")
-            ui.button("Logfiles löschen", color="red", on_click=delete_logfiles).classes("w-full")
+        #TODO fix to many logfiles - delete old ones
+        # with ui.expansion("Logfiles").classes("w-full").style("max-width: 600px;"):
+        #     with ui.column():
+        #         for file in os.listdir("logs"):
+        #             if file.endswith(".log"):
+        #                 ui.link(file + "\n", f"logs/{file}")
+        #     ui.button("Logfiles löschen", color="red", on_click=delete_logfiles).classes("w-full")
         # add section to delete videos
         with ui.expansion("Aufnahmen löschen").classes("w-full").style("max-width: 600px;"):
             grid = ui.grid(columns=3)
