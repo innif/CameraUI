@@ -6,9 +6,9 @@ import json
 
 class VideoFile(BaseModel):
     """Model representing a video file"""
-    
-    filename: str
-    start_time: datetime
+
+    filename: str = Field(default_factory=lambda: datetime.now().strftime("%y-%m-%d--%H-%M-%S"))
+    start_time: datetime = Field(default_factory=datetime.now)
     end_time: Optional[datetime] = None
     
     class Config:

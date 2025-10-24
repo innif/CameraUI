@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
-from pydantic import Field
-from typing import List
+from pydantic import Field, field_validator
+from typing import List, Union
 from datetime import time, timedelta
 import json
 
@@ -17,7 +17,16 @@ class Settings(BaseSettings):
     START_TIME: time = time(19, 50, 0)
     END_TIME: time = time(22, 10, 0)
     SHUTDOWN_TIME: time = time(1, 0, 0)
-    WEEKDAYS: List[int] = [0, 1, 2, 3, 4, 5, 6]  # Monday=0, Sunday=6
+    WEEKDAYS: Union[List[int], str] = [0, 1, 2, 3, 4, 5, 6]  # Monday=0, Sunday=6
+    
+    @field_validator('WEEKDAYS', mode='before')
+    @classmethod
+    def parse_weekdays(cls, v):
+        """Parse WEEKDAYS from string or list"""
+        if isinstance(v, str):
+            # Parse comma-separated string
+            return [int(day.strip()) for day in v.split(',') if day.strip()]
+        return v
     
     # File management
     DELETE_AGE_SECONDS: float = 1209600.0  # 14 days
