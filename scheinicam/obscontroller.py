@@ -154,7 +154,7 @@ class ObsController:
     async def check_audio(self):
         '''get audio sources'''
         if not self.connected:
-            return False
+            return 0
         try:
             vol = {"min": 1, "max": 0}
             def on_input_volume_meters(data):
@@ -171,11 +171,11 @@ class ObsController:
             self.event_client.callback.register(on_input_volume_meters)
             await asyncio.sleep(2)
             self.event_client.callback.deregister(on_input_volume_meters)
-            return vol["max"] > vol["min"]
+            return vol["max"] - vol["min"]
         except Exception as e:
             logging.exception(e)
             logging.error("Error checking audio")
-            raise False
+            raise 0
 
     def __del__(self):
         '''Destructor'''

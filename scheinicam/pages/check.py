@@ -15,8 +15,8 @@ async def check_page(obs_controller: ObsController, filemanager: Filemanager, ui
     with ui.column().style("margin: 0em; width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;"):
         with ui.column().style("max-width: 600px;"):
             # Add Previewp
-            if audio:
-                ui.label("Audio funktioniert").classes("text-xl text-positive")
+            if audio > 0:
+                ui.label(f"Audio funktioniert ({audio})").classes("text-xl text-positive")
             else:
                 ui.label("Audio Fehler!!!").classes("text-xl text-negative")
             preview = ui.html("")
