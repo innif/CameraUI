@@ -31,6 +31,19 @@ async def lifespan(app: FastAPI):
     # Initialize services
     obs_service = OBSService()
     file_service = FileService()
+    
+    # Configure OBS service
+    await obs_service.configure(
+        host=app_settings.OBS_HOST,
+        port=app_settings.OBS_PORT,
+        password=app_settings.OBS_PASSWORD,
+        show_logo=app_settings.SHOW_LOGO
+    )
+    
+    # Initialize file service
+    await file_service.initialize(delete_age=app_settings.delete_age)
+    
+    # Create scheduler
     scheduler = RecordingScheduler(obs_service, file_service)
     
     # Store services in app state
@@ -41,12 +54,15 @@ async def lifespan(app: FastAPI):
     # Start background tasks
     await scheduler.start()
     
+    logger.info("ScheinCam Backend started successfully")
+    
     yield
     
     # Shutdown
     logger.info("Shutting down ScheinCam Backend")
     await scheduler.stop()
     await obs_service.disconnect()
+    logger.info("ScheinCam Backend shut down")
 
 
 app = FastAPI(

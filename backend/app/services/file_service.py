@@ -39,43 +39,129 @@ class FileService:
     
     async def scan_files(self):
         """Scan video directory for existing files"""
-        pass
+        try:
+            if not os.path.exists(self.video_directory):
+                os.makedirs(self.video_directory)
+                logger.info(f"Created video directory: {self.video_directory}")
+                return
+            
+            # Scan for JSON metadata files
+            for filename in os.listdir(self.video_directory):
+                if filename.endswith(".json"):
+                    filepath = os.path.join(self.video_directory, filename)
+                    video_file = VideoFile.from_json_file(filepath)
+                    
+                    if video_file:
+                        # Calculate end time if missing
+                        if video_file.end_time is None:
+                            duration = await self.calculate_video_duration(video_file.filename)
+                            if duration:
+                                video_file.end_time = video_file.start_time + timedelta(seconds=duration - 1)
+                                video_file.to_json_file(self.video_directory)
+                        
+                        self.files.append(video_file)
+                        logger.info(f"Loaded video file: {video_file.filename}")
+            
+            logger.info(f"Scanned {len(self.files)} video files")
+            
+        except Exception as e:
+            logger.exception(e)
+            logger.error("Error scanning video files")
     
     def add_file(self, video_file: VideoFile):
         """Add a video file to the managed list"""
-        pass
+        if video_file not in self.files:
+            self.files.append(video_file)
+            logger.info(f"Added video file: {video_file.filename}")
     
     def remove_file(self, filename: str) -> bool:
         """Remove a video file from the managed list"""
-        pass
+        for video_file in self.files:
+            if video_file.filename == filename:
+                self.files.remove(video_file)
+                logger.info(f"Removed video file from list: {filename}")
+                return True
+        return False
     
     def get_file(self, filename: str) -> Optional[VideoFile]:
         """Get a video file by filename"""
-        pass
+        for video_file in self.files:
+            if video_file.filename == filename:
+                return video_file
+        return None
     
     def get_all_files(self) -> List[VideoFile]:
         """Get all video files"""
-        pass
+        return sorted(self.files, key=lambda f: f.start_time, reverse=True)
     
     def get_newest_file(self) -> Optional[VideoFile]:
         """Get the newest video file"""
-        pass
+        if not self.files:
+            return None
+        return max(self.files, key=lambda f: f.start_time)
     
     def get_file_dict(self) -> Dict[str, str]:
         """Get dictionary of files with descriptors"""
-        pass
+        return {file.filename: file.get_descriptor() for file in self.files}
     
     async def delete_file(self, filename: str) -> bool:
         """Delete a video file (both .mp4 and .json)"""
-        pass
+        try:
+            video_path = self.get_video_path(filename)
+            json_path = self.get_json_path(filename)
+            
+            # Remove from list
+            self.remove_file(filename)
+            
+            # Delete files
+            if os.path.exists(video_path):
+                os.remove(video_path)
+                logger.info(f"Deleted video file: {video_path}")
+            
+            if os.path.exists(json_path):
+                os.remove(json_path)
+                logger.info(f"Deleted JSON file: {json_path}")
+            
+            return True
+            
+        except Exception as e:
+            logger.exception(e)
+            logger.error(f"Error deleting file: {filename}")
+            return False
     
     async def delete_old_files(self, max_age: timedelta) -> int:
         """Delete files older than specified age"""
-        pass
+        deleted_count = 0
+        files_to_delete = []
+        
+        for video_file in self.files:
+            if video_file.age > max_age:
+                files_to_delete.append(video_file.filename)
+        
+        for filename in files_to_delete:
+            if await self.delete_file(filename):
+                deleted_count += 1
+        
+        logger.info(f"Deleted {deleted_count} old video files")
+        return deleted_count
     
     async def delete_subclips(self) -> int:
         """Delete all subclip files"""
-        pass
+        deleted_count = 0
+        
+        try:
+            for filename in os.listdir(self.video_directory):
+                if filename.startswith("subclip_"):
+                    filepath = os.path.join(self.video_directory, filename)
+                    os.remove(filepath)
+                    deleted_count += 1
+                    logger.info(f"Deleted subclip: {filename}")
+        
+        except Exception as e:
+            logger.exception(e)
+            logger.error("Error deleting subclips")
+        
+        return deleted_count
     
     async def export_subclip(
         self,
@@ -94,7 +180,45 @@ class FileService:
         Returns:
             Path to the exported subclip or None on error
         """
-        pass
+        try:
+            video_file = self.get_file(filename)
+            if not video_file:
+                logger.error(f"Video file not found: {filename}")
+                return None
+            
+            # Calculate timestamps in seconds
+            start_datetime = datetime.combine(video_file.start_time.date(), start_time)
+            end_datetime = datetime.combine(video_file.start_time.date(), end_time)
+            
+            start_seconds = (start_datetime - video_file.start_time).total_seconds()
+            end_seconds = (end_datetime - video_file.start_time).total_seconds()
+            
+            # Validate time range
+            if end_seconds <= start_seconds or start_seconds < 0:
+                logger.error("Invalid time range for export")
+                return None
+            
+            # Generate output path
+            output_filename = f"subclip_{filename}-{int(start_seconds)}-{int(end_seconds)}.mp4"
+            output_path = os.path.join(self.video_directory, output_filename)
+            
+            # Extract subclip using ffmpeg
+            source_path = self.get_video_path(filename)
+            await asyncio.to_thread(
+                ffmpeg_extract_subclip,
+                source_path,
+                start_seconds,
+                end_seconds,
+                targetname=output_path
+            )
+            
+            logger.info(f"Exported subclip: {output_filename}")
+            return output_path
+            
+        except Exception as e:
+            logger.exception(e)
+            logger.error(f"Error exporting subclip from {filename}")
+            return None
     
     async def get_frame_at_time(
         self,
@@ -111,11 +235,54 @@ class FileService:
         Returns:
             Base64 encoded image string or None
         """
-        pass
+        try:
+            video_file = self.get_file(filename)
+            if not video_file:
+                logger.error(f"Video file not found: {filename}")
+                return None
+            
+            # Calculate timestamp in seconds
+            timestamp_datetime = datetime.combine(video_file.start_time.date(), timestamp)
+            timestamp_seconds = (timestamp_datetime - video_file.start_time).total_seconds()
+            
+            if timestamp_seconds < 0:
+                logger.error("Timestamp before video start")
+                return None
+            
+            # Extract frame
+            video_path = self.get_video_path(filename)
+            frame_base64 = await self._extract_frame_base64(video_path, timestamp_seconds)
+            
+            return frame_base64
+            
+        except Exception as e:
+            logger.exception(e)
+            logger.error(f"Error getting frame from {filename}")
+            return None
     
     async def calculate_video_duration(self, filename: str) -> Optional[float]:
         """Calculate duration of a video file in seconds"""
-        pass
+        try:
+            video_path = self.get_video_path(filename)
+            if not os.path.exists(video_path):
+                return None
+            
+            # Use cv2 to get video duration
+            cap = cv2.VideoCapture(video_path)
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+            cap.release()
+            
+            if fps > 0:
+                duration = frame_count / fps
+                return duration
+            
+            return None
+            
+        except Exception as e:
+            logger.exception(e)
+            logger.error(f"Error calculating duration for {filename}")
+            return None
     
     def get_video_path(self, filename: str) -> str:
         """Get full path to a video file"""

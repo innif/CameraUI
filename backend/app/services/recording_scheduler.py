@@ -53,19 +53,99 @@ class RecordingScheduler:
     
     async def _check_recording_schedule(self):
         """Check if recording should start or stop based on schedule"""
-        pass
+        is_recording_time = self._is_recording_time()
+        
+        if is_recording_time:
+            # Should be recording
+            if not self.auto_started and not self.obs_service.recording:
+                logger.info("Starting automatic recording")
+                success = await self.start_recording()
+                if success:
+                    self.auto_started = True
+        else:
+            # Should not be recording
+            if self.obs_service.recording and self.auto_started:
+                logger.info("Stopping automatic recording")
+                success = await self.stop_recording()
+                if success:
+                    self.auto_started = False
     
     async def _check_shutdown_schedule(self):
         """Check if system should shutdown"""
-        pass
+        if self._is_shutdown_time():
+            logger.warning("Shutdown time reached - initiating system shutdown")
+            # Note: This would require appropriate permissions
+            # In production, you might want to use systemd or another service
+            try:
+                import subprocess
+                subprocess.run(["shutdown", "-h", "now"])
+            except Exception as e:
+                logger.error(f"Failed to shutdown system: {e}")
     
     async def start_recording(self) -> bool:
         """Manually start recording"""
-        pass
+        if not self.obs_service.connected:
+            logger.error("Cannot start recording: OBS not connected")
+            return False
+        
+        if self.obs_service.recording:
+            logger.warning("Recording already in progress")
+            return False
+        
+        try:
+            # Reload camera before starting
+            await asyncio.to_thread(self.obs_service.reload_camera)
+            await asyncio.sleep(1)  # Give camera time to reload
+            
+            # Start recording
+            video_file = await self.obs_service.start_recording()
+            
+            if video_file:
+                # Add to file manager
+                self.file_service.add_file(video_file)
+                
+                # Save metadata
+                video_file.to_json_file(self.file_service.video_directory)
+                
+                logger.info(f"Recording started successfully: {video_file.filename}")
+                return True
+            else:
+                logger.error("Failed to start recording: No file created")
+                return False
+                
+        except Exception as e:
+            logger.exception(e)
+            logger.error("Error starting recording")
+            return False
     
     async def stop_recording(self) -> bool:
         """Manually stop recording"""
-        pass
+        if not self.obs_service.connected:
+            logger.error("Cannot stop recording: OBS not connected")
+            return False
+        
+        if not self.obs_service.recording:
+            logger.warning("No recording in progress")
+            return False
+        
+        try:
+            # Stop recording
+            video_file = await self.obs_service.stop_recording()
+            
+            if video_file:
+                # Update metadata
+                video_file.to_json_file(self.file_service.video_directory)
+                
+                logger.info(f"Recording stopped successfully: {video_file.filename}")
+                return True
+            else:
+                logger.error("Failed to stop recording")
+                return False
+                
+        except Exception as e:
+            logger.exception(e)
+            logger.error("Error stopping recording")
+            return False
     
     def _is_recording_time(self) -> bool:
         """Check if current time is within recording schedule"""

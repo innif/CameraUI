@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: scheinicam-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/videos:/app/videos
+      - ./backend/logs:/app/logs
+      - ./backend/assets:/app/assets
+      - ./backend/settings.json:/app/settings.json
+    environment:
+      - DEBUG=False
+      - OBS_HOST=${OBS_HOST:-localhost}
+      - OBS_PORT=${OBS_PORT:-4455}
+      - OBS_PASSWORD=${OBS_PASSWORD}
+    restart: unless-stopped
+    networks:
+      - scheinicam-network
+
+  # Uncomment and configure when frontend is ready
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: scheinicam-frontend
+  #   ports:
+  #     - "80:80"
+  #   depends_on:
+  #     - backend
+  #   restart: unless-stopped
+  #   networks:
+  #     - scheinicam-network
+
+networks:
+  scheinicam-network:
+    driver: bridge
+
+volumes:
+  video-data:
+  log-data:
