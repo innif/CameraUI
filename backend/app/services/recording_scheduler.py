@@ -83,15 +83,16 @@ class RecordingScheduler:
     
     async def _check_shutdown_schedule(self):
         """Check if system should shutdown"""
-        if self._is_shutdown_time():
-            logger.warning("Shutdown time reached - initiating system shutdown")
-            # Note: This would require appropriate permissions
-            # In production, you might want to use systemd or another service
-            try:
-                import subprocess
-                subprocess.run(["shutdown", "-h", "now"])
-            except Exception as e:
-                logger.error(f"Failed to shutdown system: {e}")
+        pass
+        # if self._is_shutdown_time():
+        #     logger.warning("Shutdown time reached - initiating system shutdown")
+        #     # Note: This would require appropriate permissions
+        #     # In production, you might want to use systemd or another service
+        #     try:
+        #         import subprocess
+        #         subprocess.run(["shutdown", "-h", "now"])
+        #     except Exception as e:
+        #         logger.error(f"Failed to shutdown system: {e}")
     
     async def start_recording(self) -> bool:
         """Manually start recording"""
