@@ -1,5 +1,5 @@
 <template>
-  <v-container class="login-container">
+  <v-container class="login-container" fluid>
     <v-row justify="center" align="center" class="fill-height">
       <v-col cols="12" sm="8" md="6" lg="4">
         <v-card class="login-card" elevation="8">
@@ -82,21 +82,25 @@ const handleLogin = async () => {
 
 <style scoped>
 .login-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.1) 0%, rgba(var(--v-theme-secondary), 0.1) 100%);
-  display: flex;
-  align-items: center;
-  padding: 1rem;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  min-height: 100% !important;
+  height: 100% !important;
 }
 
 .fill-height {
-  min-height: 100vh;
+  height: 100%;
+  margin: 0;
+  width: 100%;
 }
 
 .login-card {
-  backdrop-filter: blur(10px);
-  background: rgba(var(--v-theme-surface), 0.95) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgb(var(--v-theme-surface)) !important;
+  width: 100%;
+  max-width: 500px;
 }
 
 .login-title-wrapper {
@@ -132,8 +136,12 @@ const handleLogin = async () => {
     font-size: 1.5rem;
   }
 
+  .login-container {
+    padding: 1rem !important;
+  }
+
   .login-card {
-    margin: 1rem;
+    max-width: 100%;
   }
 }
 </style>

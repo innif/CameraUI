@@ -153,6 +153,8 @@ function toggleTheme() {
 .main-content {
   background: linear-gradient(180deg, rgba(var(--v-theme-primary), 0.03) 0%, transparent 100%);
   min-height: calc(100vh - 64px - 56px);
+  display: flex;
+  flex-direction: column;
 }
 
 /* Mobile footer adjustments */
