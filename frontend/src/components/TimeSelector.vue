@@ -24,7 +24,8 @@
 
     <!-- Quick Navigation Buttons -->
     <v-row class="mb-4">
-      <v-col cols="6" sm="3">
+      <!-- Backward Buttons (left side) -->
+      <v-col cols="6" sm="3" order="1">
         <v-btn
           block
           variant="outlined"
@@ -35,7 +36,19 @@
           -1 Min
         </v-btn>
       </v-col>
-      <v-col cols="6" sm="3">
+      <!-- Forward Buttons (right side) -->
+      <v-col cols="6" sm="3" order="2" order-sm="4">
+        <v-btn
+          block
+          variant="outlined"
+          :disabled="modelValue + 60 > maxDuration"
+          @click="adjustTime(60)"
+        >
+          <v-icon start>mdi-fast-forward</v-icon>
+          +1 Min
+        </v-btn>
+      </v-col>
+      <v-col cols="6" sm="3" order="3" order-sm="2">
         <v-btn
           block
           variant="outlined"
@@ -46,7 +59,7 @@
           -10s
         </v-btn>
       </v-col>
-      <v-col cols="6" sm="3">
+      <v-col cols="6" sm="3" order="4" order-sm="3">
         <v-btn
           block
           variant="outlined"
@@ -55,17 +68,6 @@
         >
           <v-icon start>mdi-fast-forward-10</v-icon>
           +10s
-        </v-btn>
-      </v-col>
-      <v-col cols="6" sm="3">
-        <v-btn
-          block
-          variant="outlined"
-          :disabled="modelValue + 60 > maxDuration"
-          @click="adjustTime(60)"
-        >
-          <v-icon start>mdi-fast-forward</v-icon>
-          +1 Min
         </v-btn>
       </v-col>
     </v-row>
@@ -164,6 +166,14 @@ function formatTime(seconds) {
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: #000;
+}
+
+.preview-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
 }
 
 .preview-placeholder {
