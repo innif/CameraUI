@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class RecordingScheduler:
-    """Service for automatic recording scheduling"""
+    """Service for automatic recording scheduling with robust error handling"""
 
     def __init__(self, obs_service: OBSService, file_service: FileService):
         self.obs_service = obs_service
@@ -22,6 +22,15 @@ class RecordingScheduler:
         self._cleanup_task: Optional[asyncio.Task] = None
         self._running = False
         self._last_cleanup: Optional[datetime] = None
+
+        # Locks to prevent concurrent start/stop operations
+        self._recording_lock = asyncio.Lock()
+
+        # Resilience tracking
+        self._start_attempts = 0
+        self._stop_attempts = 0
+        self._last_start_error: Optional[str] = None
+        self._last_stop_error: Optional[str] = None
     
     async def start(self):
         """Start the scheduler"""
@@ -52,14 +61,20 @@ class RecordingScheduler:
         logger.info("Recording scheduler stopped")
     
     async def _scheduler_loop(self):
-        """Main scheduler loop"""
+        """Main scheduler loop with robust error handling"""
         while self._running:
             try:
                 await self._check_recording_schedule()
                 await self._check_shutdown_schedule()
+            except asyncio.CancelledError:
+                logger.info("Scheduler loop cancelled")
+                break
             except Exception as e:
-                logger.error(f"Error in scheduler loop: {e}")
-            
+                logger.exception(f"Unexpected error in scheduler loop: {e}")
+                # Don't stop the scheduler on errors, just log and continue
+                await asyncio.sleep(5)  # Wait a bit before retrying
+                continue
+
             await asyncio.sleep(1)
     
     async def _check_recording_schedule(self):
@@ -95,68 +110,147 @@ class RecordingScheduler:
         #         logger.error(f"Failed to shutdown system: {e}")
     
     async def start_recording(self) -> bool:
-        """Manually start recording"""
-        if not self.obs_service.connected:
-            logger.error("Cannot start recording: OBS not connected")
-            return False
-        
-        if self.obs_service.recording:
-            logger.warning("Recording already in progress")
-            return False
-        
-        try:
-            # Reload camera before starting
-            await asyncio.to_thread(self.obs_service.reload_camera)
-            await asyncio.sleep(1)  # Give camera time to reload
-            
-            # Start recording
-            video_file = await self.obs_service.start_recording()
-            
-            if video_file:
-                # Add to file manager
-                self.file_service.add_file(video_file)
-                
-                # Save metadata
-                video_file.to_json_file(self.file_service.video_directory)
-                
-                logger.info(f"Recording started successfully: {video_file.filename}")
-                return True
-            else:
-                logger.error("Failed to start recording: No file created")
+        """
+        Start recording with retry logic and locking to prevent race conditions.
+
+        Returns:
+            bool: True if recording started successfully, False otherwise
+        """
+        # Use lock to prevent concurrent start operations
+        async with self._recording_lock:
+            if not self.obs_service.connected:
+                self._last_start_error = "OBS not connected"
+                logger.error(f"Cannot start recording: {self._last_start_error}")
                 return False
-                
-        except Exception as e:
-            logger.exception(e)
-            logger.error("Error starting recording")
+
+            if self.obs_service.recording:
+                logger.warning("Recording already in progress")
+                return False
+
+            # Retry logic for robustness
+            max_retries = settings.RECORDING_START_RETRIES
+            retry_delay = settings.RECORDING_RETRY_DELAY
+
+            for attempt in range(1, max_retries + 1):
+                try:
+                    self._start_attempts += 1
+                    logger.info(f"Starting recording (attempt {attempt}/{max_retries})...")
+
+                    # Reload camera before starting (helps with stability)
+                    try:
+                        await asyncio.to_thread(self.obs_service.reload_camera)
+                        logger.info("Camera reloaded successfully")
+                    except Exception as cam_error:
+                        logger.warning(f"Camera reload failed (attempt {attempt}/{max_retries}): {cam_error}")
+                        # Continue anyway - camera reload is best-effort
+
+                    # Give camera time to stabilize
+                    await asyncio.sleep(1)
+
+                    # Start recording
+                    video_file = await self.obs_service.start_recording()
+
+                    if video_file:
+                        # Add to file manager
+                        self.file_service.add_file(video_file)
+
+                        # Save metadata
+                        try:
+                            video_file.to_json_file(self.file_service.video_directory)
+                        except Exception as meta_error:
+                            logger.warning(f"Failed to save metadata: {meta_error}")
+                            # Continue - metadata can be regenerated later
+
+                        self._last_start_error = None
+                        logger.info(
+                            f"✓ Recording started successfully: {video_file.filename} "
+                            f"(attempt {attempt}/{max_retries})"
+                        )
+                        return True
+                    else:
+                        raise Exception("No file created by OBS")
+
+                except Exception as e:
+                    self._last_start_error = str(e)
+                    logger.error(
+                        f"Failed to start recording (attempt {attempt}/{max_retries}): {e}"
+                    )
+
+                    # Wait before retry (except on last attempt)
+                    if attempt < max_retries:
+                        logger.info(f"Retrying in {retry_delay} seconds...")
+                        await asyncio.sleep(retry_delay)
+                    else:
+                        logger.error(
+                            f"✗ Failed to start recording after {max_retries} attempts. "
+                            f"Last error: {self._last_start_error}"
+                        )
+
             return False
     
     async def stop_recording(self) -> bool:
-        """Manually stop recording"""
-        if not self.obs_service.connected:
-            logger.error("Cannot stop recording: OBS not connected")
-            return False
-        
-        if not self.obs_service.recording:
-            logger.warning("No recording in progress")
-            return False
-        
-        try:
-            # Stop recording
-            video_file = await self.obs_service.stop_recording()
-            
-            if video_file:
-                # Update metadata
-                video_file.to_json_file(self.file_service.video_directory)
-                
-                logger.info(f"Recording stopped successfully: {video_file.filename}")
-                return True
-            else:
-                logger.error("Failed to stop recording")
+        """
+        Stop recording with retry logic and locking to prevent race conditions.
+
+        Returns:
+            bool: True if recording stopped successfully, False otherwise
+        """
+        # Use lock to prevent concurrent stop operations
+        async with self._recording_lock:
+            if not self.obs_service.connected:
+                self._last_stop_error = "OBS not connected"
+                logger.error(f"Cannot stop recording: {self._last_stop_error}")
                 return False
-                
-        except Exception as e:
-            logger.exception(e)
-            logger.error("Error stopping recording")
+
+            if not self.obs_service.recording:
+                logger.warning("No recording in progress")
+                return False
+
+            # Retry logic for robustness
+            max_retries = settings.RECORDING_START_RETRIES  # Reuse same setting
+            retry_delay = settings.RECORDING_RETRY_DELAY
+
+            for attempt in range(1, max_retries + 1):
+                try:
+                    self._stop_attempts += 1
+                    logger.info(f"Stopping recording (attempt {attempt}/{max_retries})...")
+
+                    # Stop recording
+                    video_file = await self.obs_service.stop_recording()
+
+                    if video_file:
+                        # Update metadata
+                        try:
+                            video_file.to_json_file(self.file_service.video_directory)
+                        except Exception as meta_error:
+                            logger.warning(f"Failed to save metadata: {meta_error}")
+                            # Continue - metadata can be regenerated later
+
+                        self._last_stop_error = None
+                        logger.info(
+                            f"✓ Recording stopped successfully: {video_file.filename} "
+                            f"(attempt {attempt}/{max_retries})"
+                        )
+                        return True
+                    else:
+                        raise Exception("No file returned from OBS")
+
+                except Exception as e:
+                    self._last_stop_error = str(e)
+                    logger.error(
+                        f"Failed to stop recording (attempt {attempt}/{max_retries}): {e}"
+                    )
+
+                    # Wait before retry (except on last attempt)
+                    if attempt < max_retries:
+                        logger.info(f"Retrying in {retry_delay} seconds...")
+                        await asyncio.sleep(retry_delay)
+                    else:
+                        logger.error(
+                            f"✗ Failed to stop recording after {max_retries} attempts. "
+                            f"Last error: {self._last_stop_error}"
+                        )
+
             return False
     
     def _is_recording_time(self) -> bool:
@@ -256,12 +350,18 @@ class RecordingScheduler:
         }
 
     async def _cleanup_loop(self):
-        """Periodic cleanup loop for old files and subclips"""
+        """Periodic cleanup loop for old files and subclips with robust error handling"""
         while self._running:
             try:
                 await self._run_cleanup()
+            except asyncio.CancelledError:
+                logger.info("Cleanup loop cancelled")
+                break
             except Exception as e:
-                logger.error(f"Error in cleanup loop: {e}")
+                logger.exception(f"Unexpected error in cleanup loop: {e}")
+                # Don't stop the cleanup loop on errors
+                await asyncio.sleep(60)  # Wait a minute before retrying
+                continue
 
             # Run cleanup based on configured interval
             await asyncio.sleep(settings.cleanup_interval)

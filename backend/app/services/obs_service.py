@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class OBSService:
     """Service for interacting with OBS Studio"""
-    
+
     def __init__(self):
         self.client: Optional[obs.ReqClient] = None
         self.event_client: Optional[obs.EventClient] = None
@@ -20,38 +20,54 @@ class OBSService:
         self.muted: bool = False
         self.current_file: Optional[VideoFile] = None
         self.show_logo: bool = True
-        
+
         # Connection settings (will be set via configure method)
         self.host: str = "localhost"
         self.port: int = 4455
         self.password: str = ""
-        
+        self.max_reconnect_delay: int = 30
+
         # Background connection task
         self._connection_task: Optional[asyncio.Task] = None
+
+        # Exponential backoff for reconnection
+        self._reconnect_delay: float = 1.0
+        self._connection_failures: int = 0
     
-    async def configure(self, host: str, port: int, password: str, show_logo: bool = True):
+    async def configure(self, host: str, port: int, password: str, show_logo: bool = True, max_reconnect_delay: int = 30):
         """Configure OBS connection settings"""
         self.host = host
         self.port = port
         self.password = password
         self.show_logo = show_logo
-        
+        self.max_reconnect_delay = max_reconnect_delay
+
         # Start connection loop
         if self._connection_task is None or self._connection_task.done():
             self._connection_task = asyncio.create_task(self._connection_loop())
     
     async def _connection_loop(self):
-        """Background task to maintain OBS connection"""
+        """Background task to maintain OBS connection with exponential backoff"""
         while True:
-            if not self.connected:
-                await self._try_connect()
-            else:
-                # Verify recording status if we think we're recording
-                await self._verify_recording_status()
-            await asyncio.sleep(1)
+            try:
+                if not self.connected:
+                    await self._try_connect()
+                    # Use exponential backoff when disconnected
+                    await asyncio.sleep(self._reconnect_delay)
+                else:
+                    # Verify recording status if we think we're recording
+                    await self._verify_recording_status()
+                    # When connected, check every second
+                    await asyncio.sleep(1)
+            except asyncio.CancelledError:
+                logger.info("Connection loop cancelled")
+                break
+            except Exception as e:
+                logger.exception(f"Unexpected error in connection loop: {e}")
+                await asyncio.sleep(5)  # Wait before retrying on unexpected errors
     
     async def _try_connect(self):
-        """Try to connect to OBS"""
+        """Try to connect to OBS with exponential backoff"""
         try:
             self.client = obs.ReqClient(
                 host=self.host,
@@ -64,19 +80,41 @@ class OBSService:
                 password=self.password,
                 subs=obs.Subs.INPUTVOLUMEMETERS
             )
-            
+
             # Get current recording status
             status = self.client.get_record_status()
             self.recording = status.output_active
-            
+
             self.connected = True
+
+            # Reset backoff on successful connection
+            self._reconnect_delay = 1.0
+            self._connection_failures = 0
+
             self.unmute_video()
             self.set_logo(self.show_logo)
-            
+
             logger.info("Successfully connected to OBS")
         except Exception as e:
             self.connected = False
-            logger.warning(f"Failed to connect to OBS: {e}")
+            self._connection_failures += 1
+
+            # Exponential backoff: 1s -> 2s -> 5s -> 10s -> 20s -> 30s (max)
+            if self._reconnect_delay < 2:
+                self._reconnect_delay = 2
+            elif self._reconnect_delay < 5:
+                self._reconnect_delay = 5
+            elif self._reconnect_delay < 10:
+                self._reconnect_delay = 10
+            elif self._reconnect_delay < 20:
+                self._reconnect_delay = 20
+            else:
+                self._reconnect_delay = min(30, self.max_reconnect_delay)
+
+            logger.warning(
+                f"Failed to connect to OBS (attempt #{self._connection_failures}): {e}. "
+                f"Retrying in {self._reconnect_delay}s..."
+            )
     
     async def _verify_recording_status(self):
         """Verify that the actual recording status matches our internal state"""

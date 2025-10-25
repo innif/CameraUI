@@ -4,11 +4,84 @@
       <v-col cols="12">
         <h1 class="text-h4 mb-4">System Check</h1>
 
+        <!-- Audio Monitor Status -->
+        <v-card class="mb-4" v-if="adminStore.obsStatus?.audio_monitor">
+          <v-card-title>
+            <v-icon start>mdi-robot</v-icon>
+            Automatische Audio-Überwachung
+          </v-card-title>
+          <v-card-text>
+            <v-alert
+              :type="getAudioMonitorAlertType()"
+              :icon="getAudioMonitorIcon()"
+              class="mb-4"
+            >
+              <div>
+                <strong>Status: {{ adminStore.obsStatus.audio_monitor.running ? 'Aktiv' : 'Inaktiv' }}</strong>
+                <div class="mt-2">
+                  <small>
+                    Die automatische Audio-Überwachung prüft alle {{ adminStore.obsStatus.audio_monitor.check_interval }} Sekunden
+                    den Audio-Pegel und lädt die Kamera bei {{ adminStore.obsStatus.audio_monitor.failure_threshold }}
+                    aufeinanderfolgenden Fehlern automatisch neu.
+                  </small>
+                </div>
+              </div>
+            </v-alert>
+
+            <v-row dense>
+              <v-col cols="6">
+                <v-card variant="outlined">
+                  <v-card-text>
+                    <div class="text-caption text-grey">Gesamte Checks</div>
+                    <div class="text-h6">{{ adminStore.obsStatus.audio_monitor.total_checks }}</div>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+              <v-col cols="6">
+                <v-card variant="outlined">
+                  <v-card-text>
+                    <div class="text-caption text-grey">Fehler</div>
+                    <div class="text-h6">{{ adminStore.obsStatus.audio_monitor.total_failures }}</div>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+              <v-col cols="6">
+                <v-card variant="outlined">
+                  <v-card-text>
+                    <div class="text-caption text-grey">Aufeinanderfolgende Fehler</div>
+                    <div class="text-h6" :class="adminStore.obsStatus.audio_monitor.consecutive_failures > 0 ? 'text-error' : ''">
+                      {{ adminStore.obsStatus.audio_monitor.consecutive_failures }}
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+              <v-col cols="6">
+                <v-card variant="outlined">
+                  <v-card-text>
+                    <div class="text-caption text-grey">Kamera-Neustarts</div>
+                    <div class="text-h6">{{ adminStore.obsStatus.audio_monitor.camera_reloads }}</div>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+
+            <div v-if="adminStore.obsStatus.audio_monitor.last_check_time" class="mt-3">
+              <v-divider class="my-2"></v-divider>
+              <div class="text-caption">
+                Letzter Check: {{ formatDate(adminStore.obsStatus.audio_monitor.last_check_time) }}
+              </div>
+              <div v-if="adminStore.obsStatus.audio_monitor.last_failure_time" class="text-caption text-error">
+                Letzter Fehler: {{ formatDate(adminStore.obsStatus.audio_monitor.last_failure_time) }}
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
+
         <!-- Audio Check -->
         <v-card class="mb-4">
           <v-card-title>
             <v-icon start>mdi-volume-high</v-icon>
-            Audio-Test
+            Manueller Audio-Test
           </v-card-title>
           <v-card-text>
             <p class="mb-4">
@@ -94,11 +167,12 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useAdminStore } from '@/stores/admin'
 import PreviewImage from '@/components/PreviewImage.vue'
 
 const adminStore = useAdminStore()
+const statusInterval = ref(null)
 
 async function checkAudio() {
   await adminStore.checkAudio()
@@ -112,7 +186,47 @@ function reloadPage() {
   window.location.reload()
 }
 
+function getAudioMonitorAlertType() {
+  const monitor = adminStore.obsStatus?.audio_monitor
+  if (!monitor || !monitor.running) return 'info'
+  if (monitor.consecutive_failures >= monitor.failure_threshold) return 'error'
+  if (monitor.consecutive_failures > 0) return 'warning'
+  return 'success'
+}
+
+function getAudioMonitorIcon() {
+  const monitor = adminStore.obsStatus?.audio_monitor
+  if (!monitor || !monitor.running) return 'mdi-pause-circle'
+  if (monitor.consecutive_failures >= monitor.failure_threshold) return 'mdi-alert-circle'
+  if (monitor.consecutive_failures > 0) return 'mdi-alert'
+  return 'mdi-check-circle'
+}
+
+function formatDate(isoString) {
+  if (!isoString) return 'N/A'
+  const date = new Date(isoString)
+  return date.toLocaleString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+}
+
 onMounted(async () => {
   await adminStore.fetchStatus()
+
+  // Refresh status every 10 seconds to see audio monitor updates
+  statusInterval.value = setInterval(async () => {
+    await adminStore.fetchStatus()
+  }, 10000)
+})
+
+onUnmounted(() => {
+  if (statusInterval.value) {
+    clearInterval(statusInterval.value)
+  }
 })
 </script>

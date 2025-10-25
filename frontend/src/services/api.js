@@ -61,6 +61,9 @@ export default {
     checkAudio() {
       return api.get('/api/admin/audio/check')
     },
+    getAudioMonitorStatus() {
+      return api.get('/api/admin/audio/monitor')
+    },
     getLogs() {
       return api.get('/api/admin/logs')
     },

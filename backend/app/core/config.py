@@ -40,8 +40,19 @@ class Settings(BaseSettings):
     # OBS settings
     OBS_HOST: str = "localhost"
     OBS_PORT: int = 4455
-    OBS_PASSWORD: str = "tXqFcBWo7WngUnAs"
-    
+    OBS_PASSWORD: str = ""
+    OBS_RECONNECT_MAX_DELAY: int = 30  # Maximum delay between reconnection attempts
+
+    # Audio monitoring settings
+    AUDIO_CHECK_INTERVAL: int = 30  # Seconds between automatic audio checks
+    AUDIO_CHECK_RETRIES: int = 3  # Number of retry attempts for audio checks
+    AUDIO_FAILURE_THRESHOLD: int = 2  # Consecutive failures before camera reload
+    AUDIO_THRESHOLD: float = 0.01  # Minimum audio level to consider as "has audio"
+
+    # Recording resilience settings
+    RECORDING_START_RETRIES: int = 3  # Number of attempts to start recording
+    RECORDING_RETRY_DELAY: int = 2  # Seconds between recording start retries
+
     # UI settings
     SHOW_LOGO: bool = True
     

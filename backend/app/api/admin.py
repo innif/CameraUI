@@ -17,16 +17,18 @@ class LogoRequest(BaseModel):
 
 @router.get("/status")
 async def get_admin_status(request: Request):
-    """Get admin status including OBS connection, recording state, etc."""
+    """Get admin status including OBS connection, recording state, audio monitor, etc."""
     obs_service = request.app.state.obs_service
     file_service = request.app.state.file_service
+    audio_monitor = request.app.state.audio_monitor
 
     return {
         "obs": obs_service.get_status(),
         "files": {
             "total": len(file_service.get_all_files()),
             "newest": file_service.get_newest_file()
-        }
+        },
+        "audio_monitor": audio_monitor.get_status()
     }
 
 
@@ -98,7 +100,7 @@ async def shutdown_system(request: Request):
 
 @router.get("/audio/check")
 async def check_audio_levels(request: Request):
-    """Check audio levels from OBS"""
+    """Check audio levels from OBS (manual check)"""
     obs_service = request.app.state.obs_service
 
     try:
@@ -108,6 +110,17 @@ async def check_audio_levels(request: Request):
             "range": audio_range,
             "has_audio": audio_range > 0.01  # Threshold for detecting audio
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/audio/monitor")
+async def get_audio_monitor_status(request: Request):
+    """Get the status of the automatic audio monitoring service"""
+    audio_monitor = request.app.state.audio_monitor
+
+    try:
+        return audio_monitor.get_status()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

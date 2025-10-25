@@ -11,6 +11,7 @@ from app.core.config import settings as app_settings
 from app.services.recording_scheduler import RecordingScheduler
 from app.services.obs_service import OBSService
 from app.services.file_service import FileService
+from app.services.audio_monitor import AudioMonitorService
 
 # Configure logging with local timezone for filename
 _local_tz = ZoneInfo(app_settings.TIMEZONE)
@@ -40,22 +41,28 @@ async def lifespan(app: FastAPI):
         host=app_settings.OBS_HOST,
         port=app_settings.OBS_PORT,
         password=app_settings.OBS_PASSWORD,
-        show_logo=app_settings.SHOW_LOGO
+        show_logo=app_settings.SHOW_LOGO,
+        max_reconnect_delay=app_settings.OBS_RECONNECT_MAX_DELAY
     )
-    
+
     # Initialize file service
     await file_service.initialize(delete_age=app_settings.delete_age)
-    
+
     # Create scheduler
     scheduler = RecordingScheduler(obs_service, file_service)
-    
+
+    # Create audio monitor service
+    audio_monitor = AudioMonitorService(obs_service, app_settings)
+
     # Store services in app state
     app.state.obs_service = obs_service
     app.state.file_service = file_service
     app.state.scheduler = scheduler
-    
+    app.state.audio_monitor = audio_monitor
+
     # Start background tasks
     await scheduler.start()
+    await audio_monitor.start()
     
     logger.info("ScheinCam Backend started successfully")
     
@@ -63,6 +70,7 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("Shutting down ScheinCam Backend")
+    await audio_monitor.stop()
     await scheduler.stop()
     await obs_service.disconnect()
     logger.info("ScheinCam Backend shut down")
