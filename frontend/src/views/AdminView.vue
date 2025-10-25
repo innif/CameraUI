@@ -2,7 +2,7 @@
   <v-container class="container-max">
     <v-row>
       <v-col cols="12">
-        <h1 class="text-h4 mb-4">Administration</h1>
+        <h1 class="admin-title mb-4">Administration</h1>
 
         <!-- OBS Connection Status -->
         <v-alert
@@ -368,3 +368,24 @@ onMounted(async () => {
   await videosStore.fetchVideos()
 })
 </script>
+
+<style scoped>
+/* Admin page mobile optimizations */
+.admin-title {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+@media (max-width: 599px) {
+  .admin-title {
+    font-size: 1.5rem;
+  }
+}
+
+/* Ensure buttons are touch-friendly on mobile */
+@media (max-width: 599px) {
+  .v-btn {
+    min-height: 44px;
+  }
+}
+</style>

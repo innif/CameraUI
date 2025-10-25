@@ -1,11 +1,11 @@
 <template>
   <div>
-    <v-stepper v-model="step" alt-labels>
+    <v-stepper v-model="step" :alt-labels="!isMobile" :mobile="isMobile">
       <v-stepper-header>
         <v-stepper-item
           :complete="step > 1"
           :value="1"
-          title="Aufnahme wählen"
+          :title="isMobile ? 'Wählen' : 'Aufnahme wählen'"
           icon="mdi-calendar"
         ></v-stepper-item>
 
@@ -14,7 +14,7 @@
         <v-stepper-item
           :complete="step > 2"
           :value="2"
-          title="Startzeit"
+          :title="isMobile ? 'Start' : 'Startzeit'"
           icon="mdi-clock-start"
         ></v-stepper-item>
 
@@ -23,7 +23,7 @@
         <v-stepper-item
           :complete="step > 3"
           :value="3"
-          title="Endzeit"
+          :title="isMobile ? 'Ende' : 'Endzeit'"
           icon="mdi-clock-end"
         ></v-stepper-item>
 
@@ -40,8 +40,8 @@
         <!-- Step 1: Select Video -->
         <v-stepper-window-item :value="1">
           <v-card>
-            <v-card-text>
-              <h3 class="text-h6 mb-4">Wähle eine Aufnahme</h3>
+            <v-card-text :class="isMobile ? 'pa-3' : ''">
+              <h3 v-if="!isMobile" class="text-h6 mb-4">Wähle eine Aufnahme</h3>
 
               <v-select
                 v-model="selectedVideoId"
@@ -53,17 +53,21 @@
                 :loading="videosStore.loading"
               ></v-select>
 
-              <v-alert v-if="!videoOptions.length" type="info" class="mt-4">
+              <v-alert v-if="!videoOptions.length" type="info" :class="isMobile ? 'mt-2' : 'mt-4'">
                 Keine Aufnahmen verfügbar
               </v-alert>
             </v-card-text>
-            <v-card-actions>
+            <v-card-actions :class="isMobile ? 'pa-2' : ''">
               <v-spacer></v-spacer>
               <v-btn
                 color="primary"
                 :disabled="!selectedVideoId"
                 @click="selectVideo"
+                :size="isMobile ? 'default' : 'large'"
+                variant="elevated"
+                class="weiter-btn"
               >
+                <v-icon start>mdi-arrow-right</v-icon>
                 Weiter
               </v-btn>
             </v-card-actions>
@@ -73,8 +77,8 @@
         <!-- Step 2: Set Start Time -->
         <v-stepper-window-item :value="2">
           <v-card>
-            <v-card-text>
-              <h3 class="text-h6 mb-4">Startzeit festlegen</h3>
+            <v-card-text :class="isMobile ? 'pa-3' : ''">
+              <h3 v-if="!isMobile" class="text-h6 mb-4">Startzeit festlegen</h3>
 
               <TimeSelector
                 v-if="videosStore.selectedVideo"
@@ -83,10 +87,22 @@
                 @preview="updatePreview"
               />
             </v-card-text>
-            <v-card-actions>
-              <v-btn @click="step = 1">Zurück</v-btn>
+            <v-card-actions :class="isMobile ? 'pa-2' : ''">
+              <v-btn @click="step = 1" :size="isMobile ? 'small' : 'default'" variant="text">
+                <v-icon start>mdi-arrow-left</v-icon>
+                Zurück
+              </v-btn>
               <v-spacer></v-spacer>
-              <v-btn color="primary" @click="step = 3">Weiter</v-btn>
+              <v-btn
+                color="primary"
+                @click="step = 3"
+                :size="isMobile ? 'default' : 'large'"
+                variant="elevated"
+                class="weiter-btn"
+              >
+                <v-icon start>mdi-arrow-right</v-icon>
+                Weiter
+              </v-btn>
             </v-card-actions>
           </v-card>
         </v-stepper-window-item>
@@ -94,8 +110,8 @@
         <!-- Step 3: Set End Time -->
         <v-stepper-window-item :value="3">
           <v-card>
-            <v-card-text>
-              <h3 class="text-h6 mb-4">Endzeit festlegen</h3>
+            <v-card-text :class="isMobile ? 'pa-3' : ''">
+              <h3 v-if="!isMobile" class="text-h6 mb-4">Endzeit festlegen</h3>
 
               <TimeSelector
                 v-if="videosStore.selectedVideo"
@@ -105,10 +121,22 @@
                 @preview="updatePreview"
               />
             </v-card-text>
-            <v-card-actions>
-              <v-btn @click="step = 2">Zurück</v-btn>
+            <v-card-actions :class="isMobile ? 'pa-2' : ''">
+              <v-btn @click="step = 2" :size="isMobile ? 'small' : 'default'" variant="text">
+                <v-icon start>mdi-arrow-left</v-icon>
+                Zurück
+              </v-btn>
               <v-spacer></v-spacer>
-              <v-btn color="primary" @click="step = 4">Weiter</v-btn>
+              <v-btn
+                color="primary"
+                @click="step = 4"
+                :size="isMobile ? 'default' : 'large'"
+                variant="elevated"
+                class="weiter-btn"
+              >
+                <v-icon start>mdi-arrow-right</v-icon>
+                Weiter
+              </v-btn>
             </v-card-actions>
           </v-card>
         </v-stepper-window-item>
@@ -116,11 +144,11 @@
         <!-- Step 4: Export & Download -->
         <v-stepper-window-item :value="4">
           <v-card>
-            <v-card-text>
-              <h3 class="text-h6 mb-4">Export und Download</h3>
+            <v-card-text :class="isMobile ? 'pa-3' : ''">
+              <h3 v-if="!isMobile" class="text-h6 mb-4">Export und Download</h3>
 
-              <v-alert v-if="!videosStore.exportedFile" type="info" class="mb-4">
-                <p class="mb-2">
+              <v-alert v-if="!videosStore.exportedFile" type="info" :class="isMobile ? 'mb-2' : 'mb-4'">
+                <p :class="isMobile ? 'mb-1' : 'mb-2'">
                   <strong>Dauer:</strong> {{ formatDuration(endTime - startTime) }}
                 </p>
                 <p>
@@ -129,17 +157,17 @@
                 </p>
               </v-alert>
 
-              <div v-if="videosStore.exporting" class="text-center py-8">
+              <div v-if="videosStore.exporting" class="text-center" :class="isMobile ? 'py-4' : 'py-8'">
                 <v-progress-circular
                   indeterminate
-                  size="64"
+                  :size="isMobile ? 48 : 64"
                   color="primary"
                 ></v-progress-circular>
-                <p class="mt-4">Exportiere Video...</p>
+                <p :class="isMobile ? 'mt-2' : 'mt-4'">Exportiere Video...</p>
               </div>
 
               <div v-else-if="videosStore.exportedFile">
-                <v-alert type="success" class="mb-4">
+                <v-alert type="success" :class="isMobile ? 'mb-2' : 'mb-4'">
                   Export erfolgreich abgeschlossen!
                 </v-alert>
 
@@ -158,15 +186,15 @@
                 <v-btn
                   color="success"
                   block
-                  size="large"
-                  class="mt-4"
+                  :size="isMobile ? 'default' : 'large'"
+                  :class="isMobile ? 'mt-2' : 'mt-4'"
                   @click="downloadFile"
                 >
                   <v-icon start>mdi-download</v-icon>
                   Video herunterladen
                 </v-btn>
 
-                <v-alert type="info" class="mt-4" density="compact">
+                <v-alert type="info" :class="isMobile ? 'mt-2' : 'mt-4'" density="compact">
                   <small>
                     Hinweis: Stelle sicher, dass du mit dem WLAN verbunden bist.
                     Der Download kann je nach Dateigröße einige Zeit dauern.
@@ -178,15 +206,15 @@
                 v-else
                 color="primary"
                 block
-                size="large"
+                :size="isMobile ? 'default' : 'large'"
                 @click="exportVideo"
               >
                 <v-icon start>mdi-export</v-icon>
                 Video exportieren
               </v-btn>
             </v-card-text>
-            <v-card-actions>
-              <v-btn @click="resetWizard">Neue Auswahl</v-btn>
+            <v-card-actions :class="isMobile ? 'pa-2' : ''">
+              <v-btn @click="resetWizard" :size="isMobile ? 'small' : 'default'">Neue Auswahl</v-btn>
               <v-spacer></v-spacer>
             </v-card-actions>
           </v-card>
@@ -198,10 +226,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useVideosStore } from '@/stores/videos'
 import TimeSelector from '@/components/TimeSelector.vue'
 
 const videosStore = useVideosStore()
+const { mobile } = useDisplay()
+const isMobile = computed(() => mobile.value)
+
 const step = ref(1)
 const selectedVideoId = ref(null)
 const startTime = ref(0)
@@ -278,3 +310,18 @@ onMounted(async () => {
   await videosStore.fetchVideos()
 })
 </script>
+
+<style scoped>
+/* Highlight the Weiter (Next) button */
+.weiter-btn {
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(var(--v-theme-primary), 0.4) !important;
+}
+
+@media (hover: hover) {
+  .weiter-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(var(--v-theme-primary), 0.5) !important;
+  }
+}
+</style>

@@ -5,49 +5,45 @@
       elevation="0"
       class="app-bar-glass"
     >
-      <v-app-bar-title class="d-flex align-center">
-        <v-icon icon="mdi-video" size="28" class="mr-3" color="primary"></v-icon>
+      <v-app-bar-title class="d-flex align-center app-bar-title">
+        <v-icon icon="mdi-video" :size="isMobile ? 24 : 28" class="mr-2 mr-sm-3" color="primary"></v-icon>
         <span class="app-title">ScheiniCam</span>
       </v-app-bar-title>
 
       <v-spacer></v-spacer>
 
-      <v-btn
-        icon
-        to="/"
-        title="Aufnahme"
-        variant="text"
-        class="nav-btn"
-      >
-        <v-icon>mdi-record-circle</v-icon>
-      </v-btn>
+      <!-- Only show admin/check navigation when on those pages -->
+      <template v-if="showAdminNav">
+        <v-btn
+          icon
+          to="/admin"
+          title="Admin"
+          variant="text"
+          class="nav-btn"
+          :size="isMobile ? 'small' : 'default'"
+        >
+          <v-icon>mdi-cog</v-icon>
+        </v-btn>
 
-      <v-btn
-        icon
-        to="/admin"
-        title="Admin"
-        variant="text"
-        class="nav-btn"
-      >
-        <v-icon>mdi-cog</v-icon>
-      </v-btn>
-
-      <v-btn
-        icon
-        to="/check"
-        title="System Check"
-        variant="text"
-        class="nav-btn"
-      >
-        <v-icon>mdi-check-circle</v-icon>
-      </v-btn>
+        <v-btn
+          icon
+          to="/check"
+          title="System Check"
+          variant="text"
+          class="nav-btn"
+          :size="isMobile ? 'small' : 'default'"
+        >
+          <v-icon>mdi-check-circle</v-icon>
+        </v-btn>
+      </template>
 
       <v-btn
         icon
         @click="toggleTheme"
         title="Dark Mode umschalten"
         variant="text"
-        class="nav-btn ml-2"
+        class="nav-btn ml-1 ml-sm-2"
+        :size="isMobile ? 'small' : 'default'"
       >
         <v-icon>{{ theme.global.current.value.dark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
       </v-btn>
@@ -75,9 +71,20 @@
 </template>
 
 <script setup>
-import { useTheme } from 'vuetify'
+import { computed } from 'vue'
+import { useTheme, useDisplay } from 'vuetify'
+import { useRoute } from 'vue-router'
 
 const theme = useTheme()
+const { mobile } = useDisplay()
+const route = useRoute()
+
+const isMobile = computed(() => mobile.value)
+
+// Only show admin/check navigation when on those pages
+const showAdminNav = computed(() => {
+  return route.path === '/admin' || route.path === '/check'
+})
 
 function toggleTheme() {
   theme.global.name.value = theme.global.current.value.dark ? 'light' : 'dark'
@@ -90,6 +97,11 @@ function toggleTheme() {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.app-bar-title {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
 .app-title {
   font-size: 1.5rem;
   font-weight: 600;
@@ -98,19 +110,45 @@ function toggleTheme() {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Mobile optimizations for app title */
+@media (max-width: 599px) {
+  .app-title {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .app-title {
+    font-size: 1rem;
+  }
 }
 
 .nav-btn {
   transition: all 0.2s ease;
 }
 
-.nav-btn:hover {
-  transform: translateY(-2px);
+/* Reduce hover effects on mobile for better performance */
+@media (hover: hover) {
+  .nav-btn:hover {
+    transform: translateY(-2px);
+  }
 }
 
 .main-content {
   background: linear-gradient(180deg, rgba(var(--v-theme-primary), 0.03) 0%, transparent 100%);
   min-height: calc(100vh - 64px - 56px);
+}
+
+/* Mobile footer adjustments */
+@media (max-width: 599px) {
+  .main-content {
+    min-height: calc(100vh - 56px - 48px);
+  }
 }
 
 .footer-glass {
@@ -125,6 +163,16 @@ function toggleTheme() {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
+  text-align: center;
+}
+
+/* Smaller footer text on mobile */
+@media (max-width: 599px) {
+  .footer-text {
+    font-size: 0.75rem;
+    padding: 0.25rem;
+  }
 }
 
 /* Page transition animations */

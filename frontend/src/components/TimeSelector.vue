@@ -1,7 +1,7 @@
 <template>
   <div class="time-selector">
     <!-- Time Display -->
-    <v-chip color="primary" size="large" class="mb-4">
+    <v-chip color="primary" :size="isMobile ? 'default' : 'large'" :class="isMobile ? 'mb-2' : 'mb-4'">
       <v-icon start>mdi-clock</v-icon>
       {{ formatTime(modelValue) }}
     </v-chip>
@@ -14,7 +14,7 @@
       :step="1"
       thumb-label="always"
       color="primary"
-      class="mb-4"
+      :class="isMobile ? 'mb-2' : 'mb-4'"
       @update:model-value="updateValue"
     >
       <template #thumb-label="{ modelValue }">
@@ -23,65 +23,67 @@
     </v-slider>
 
     <!-- Quick Navigation Buttons -->
-    <v-row class="mb-4">
-      <!-- Backward Buttons (left side) -->
+    <v-row :class="isMobile ? 'mb-2 time-nav-buttons-mobile' : 'mb-4'" dense>
+      <!-- Button -1 Min -->
       <v-col cols="6" sm="3" order="1">
         <v-btn
           block
           variant="outlined"
           :disabled="modelValue - 60 < minTime"
           @click="adjustTime(-60)"
+          class="time-nav-btn"
+          :size="isMobile ? 'small' : 'default'"
         >
-          <v-icon start>mdi-rewind</v-icon>
-          -1 Min
+          <v-icon :size="isMobile ? 'small' : 'default'">mdi-rewind</v-icon>
+          <span class="ml-1" :class="isMobile ? 'mobile-btn-text' : ''">{{ isMobile ? '-1m' : '-1 Min' }}</span>
         </v-btn>
       </v-col>
-      <!-- Forward Buttons (right side) -->
-      <v-col cols="6" sm="3" order="2" order-sm="4">
-        <v-btn
-          block
-          variant="outlined"
-          :disabled="modelValue + 60 > maxDuration"
-          @click="adjustTime(60)"
-        >
-          <v-icon start>mdi-fast-forward</v-icon>
-          +1 Min
-        </v-btn>
-      </v-col>
-      <v-col cols="6" sm="3" order="3" order-sm="2">
+
+      <!-- Button -10s -->
+      <v-col cols="6" sm="3" order="2">
         <v-btn
           block
           variant="outlined"
           :disabled="modelValue - 10 < minTime"
           @click="adjustTime(-10)"
+          class="time-nav-btn"
+          :size="isMobile ? 'small' : 'default'"
         >
-          <v-icon start>mdi-rewind-10</v-icon>
-          -10s
+          <v-icon :size="isMobile ? 'small' : 'default'">mdi-rewind-10</v-icon>
+          <span class="ml-1 mobile-btn-text">-10s</span>
         </v-btn>
       </v-col>
-      <v-col cols="6" sm="3" order="4" order-sm="3">
+
+      <!-- Button +10s -->
+      <v-col cols="6" sm="3" order="3" order-xs="4">
         <v-btn
           block
           variant="outlined"
           :disabled="modelValue + 10 > maxDuration"
           @click="adjustTime(10)"
+          class="time-nav-btn"
+          :size="isMobile ? 'small' : 'default'"
         >
-          <v-icon start>mdi-fast-forward-10</v-icon>
-          +10s
+          <v-icon :size="isMobile ? 'small' : 'default'">mdi-fast-forward-10</v-icon>
+          <span class="ml-1 mobile-btn-text">+10s</span>
+        </v-btn>
+      </v-col>
+
+      <!-- Button +1 Min -->
+      <v-col cols="6" sm="3" order="4" order-xs="3">
+        <v-btn
+          block
+          variant="outlined"
+          :disabled="modelValue + 60 > maxDuration"
+          @click="adjustTime(60)"
+          class="time-nav-btn"
+          :size="isMobile ? 'small' : 'default'"
+        >
+          <v-icon :size="isMobile ? 'small' : 'default'">mdi-fast-forward</v-icon>
+          <span class="ml-1" :class="isMobile ? 'mobile-btn-text' : ''">{{ isMobile ? '+1m' : '+1 Min' }}</span>
         </v-btn>
       </v-col>
     </v-row>
-
-    <!-- Preview Button -->
-    <v-btn
-      color="info"
-      block
-      class="mb-4"
-      @click="emit('preview', modelValue)"
-    >
-      <v-icon start>mdi-image-search</v-icon>
-      Vorschau aktualisieren
-    </v-btn>
 
     <!-- Preview Image -->
     <div v-if="videosStore.previewFrame" class="preview-container">
@@ -100,6 +102,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useVideosStore } from '@/stores/videos'
 
 const props = defineProps({
@@ -120,6 +123,22 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'preview'])
 
 const videosStore = useVideosStore()
+const { mobile } = useDisplay()
+
+const isMobile = computed(() => mobile.value)
+
+// Debounce timer for slider preview updates
+let previewDebounceTimer = null
+
+// Debounced preview update function
+function debouncedPreviewUpdate(value) {
+  if (previewDebounceTimer) {
+    clearTimeout(previewDebounceTimer)
+  }
+  previewDebounceTimer = setTimeout(() => {
+    emit('preview', value)
+  }, 500) // Wait 500ms after user stops moving slider
+}
 
 const maxDuration = computed(() => {
   // Use video duration if available, otherwise fallback to a large value
@@ -134,6 +153,8 @@ const maxDuration = computed(() => {
 
 function updateValue(value) {
   emit('update:modelValue', value)
+  // Auto-update preview when slider changes (with debounce)
+  debouncedPreviewUpdate(value)
 }
 
 function adjustTime(seconds) {
@@ -142,6 +163,8 @@ function adjustTime(seconds) {
     Math.min(maxDuration.value, props.modelValue + seconds)
   )
   emit('update:modelValue', newValue)
+  // Auto-update preview immediately when buttons are clicked
+  emit('preview', newValue)
 }
 
 function formatTime(seconds) {
@@ -159,6 +182,28 @@ function formatTime(seconds) {
 <style scoped>
 .time-selector {
   width: 100%;
+}
+
+/* Mobile-optimized navigation buttons */
+.time-nav-btn {
+  min-height: 44px; /* Touch-friendly minimum height */
+  font-size: 0.875rem;
+}
+
+@media (max-width: 599px) {
+  .mobile-btn-text {
+    font-size: 0.75rem;
+  }
+
+  .time-nav-btn {
+    min-height: 40px;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .time-nav-buttons-mobile {
+    margin-left: -4px;
+    margin-right: -4px;
+  }
 }
 
 .preview-container {
@@ -185,5 +230,20 @@ function formatTime(seconds) {
   align-items: center;
   background-color: #f5f5f5;
   border-radius: 8px;
+}
+
+/* Mobile-responsive preview placeholder */
+@media (max-width: 599px) {
+  .preview-placeholder {
+    min-height: 180px;
+  }
+
+  .preview-placeholder .v-icon {
+    font-size: 48px !important;
+  }
+
+  .preview-placeholder p {
+    font-size: 0.875rem;
+  }
 }
 </style>

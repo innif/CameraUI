@@ -252,9 +252,28 @@ onUnmounted(() => {
   margin-bottom: 0.5rem;
 }
 
+/* Mobile-responsive title sizing */
+@media (max-width: 599px) {
+  .page-title {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .page-title {
+    font-size: 1.5rem;
+  }
+}
+
 .page-subtitle {
   font-size: 1.1rem;
   opacity: 0.7;
+}
+
+@media (max-width: 599px) {
+  .page-subtitle {
+    font-size: 0.95rem;
+  }
 }
 
 /* Modern Tabs */
@@ -283,15 +302,26 @@ onUnmounted(() => {
   transition: all 0.3s ease;
 }
 
-.modern-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(var(--v-theme-primary), 0.15);
+/* Only apply hover effects on devices that support hover */
+@media (hover: hover) {
+  .modern-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(var(--v-theme-primary), 0.15);
+  }
 }
 
 .card-title {
   font-size: 1.25rem;
   font-weight: 600;
   padding: 1.25rem 1.5rem;
+}
+
+/* Mobile card padding adjustments */
+@media (max-width: 599px) {
+  .card-title {
+    font-size: 1.1rem;
+    padding: 1rem 1.25rem;
+  }
 }
 
 /* Time Card */
@@ -309,10 +339,30 @@ onUnmounted(() => {
   letter-spacing: -2px;
 }
 
+/* Responsive time display */
+@media (max-width: 599px) {
+  .time-display {
+    font-size: 2.5rem;
+    letter-spacing: -1px;
+  }
+}
+
+@media (max-width: 400px) {
+  .time-display {
+    font-size: 2rem;
+  }
+}
+
 .time-label {
   font-size: 1rem;
   opacity: 0.7;
   font-weight: 500;
+}
+
+@media (max-width: 599px) {
+  .time-label {
+    font-size: 0.9rem;
+  }
 }
 
 /* Preview */
@@ -390,9 +440,19 @@ onUnmounted(() => {
   transition: all 0.3s ease;
 }
 
-.action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(var(--v-theme-primary), 0.4);
+@media (hover: hover) {
+  .action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(var(--v-theme-primary), 0.4);
+  }
+}
+
+/* Mobile button optimizations */
+@media (max-width: 599px) {
+  .action-btn {
+    font-size: 0.95rem;
+    padding: 1.25rem;
+  }
 }
 
 /* Instructions */

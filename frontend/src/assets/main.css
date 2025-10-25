@@ -29,6 +29,37 @@ html, body {
   }
 }
 
+@media (max-width: 599px) {
+  .container-max {
+    padding: 1rem 0.75rem;
+  }
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 599px) {
+  /* Ensure all interactive elements are touch-friendly */
+  .v-btn,
+  .v-chip,
+  .v-list-item {
+    min-height: 44px !important;
+  }
+
+  /* Optimize spacing for mobile */
+  .v-card {
+    margin-bottom: 1rem !important;
+  }
+
+  /* Make text more readable on small screens */
+  body {
+    font-size: 16px; /* Prevents zoom on iOS when focusing inputs */
+  }
+
+  /* Improve tap targets for icons */
+  .v-icon {
+    padding: 4px;
+  }
+}
+
 /* Utility classes */
 .text-center {
   text-align: center;
@@ -90,8 +121,11 @@ html, body {
   transition: all 0.2s ease;
 }
 
-.v-btn:not(.v-btn--disabled):hover {
-  transform: translateY(-1px);
+/* Only apply hover effects on devices that support hover */
+@media (hover: hover) {
+  .v-btn:not(.v-btn--disabled):hover {
+    transform: translateY(-1px);
+  }
 }
 
 /* Focus styles */
