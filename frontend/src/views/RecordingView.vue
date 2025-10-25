@@ -111,8 +111,8 @@
               </v-card-text>
             </v-card>
 
-            <!-- Preview -->
-            <v-card class="mb-6 modern-card preview-card" elevation="0">
+            <!-- Preview - nur angezeigt während Aufnahme -->
+            <v-card v-if="recordingStore.isRecording" class="mb-6 modern-card preview-card" elevation="0">
               <v-card-title class="card-title">
                 <v-icon color="primary" class="mr-2">mdi-camera</v-icon>
                 Live-Vorschau
@@ -156,7 +156,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRecordingStore } from '@/stores/recording'
 import DownloadWizard from '@/components/DownloadWizard.vue'
 
@@ -186,6 +186,23 @@ async function updatePreview() {
   }
 }
 
+// Start preview interval
+function startPreviewInterval() {
+  if (previewInterval) return // Already running
+  console.log('Starting preview interval')
+  updatePreview() // Initial fetch
+  previewInterval = setInterval(updatePreview, 1000)
+}
+
+// Stop preview interval
+function stopPreviewInterval() {
+  if (previewInterval) {
+    console.log('Stopping preview interval')
+    clearInterval(previewInterval)
+    previewInterval = null
+  }
+}
+
 // Update status
 async function updateStatus() {
   try {
@@ -210,23 +227,35 @@ async function updateNextScheduled() {
   }
 }
 
+// Watch recording status and start/stop preview accordingly
+watch(() => recordingStore.isRecording, (isRecording) => {
+  if (isRecording) {
+    startPreviewInterval()
+  } else {
+    stopPreviewInterval()
+  }
+})
+
 onMounted(async () => {
   // Initial fetch
   await recordingStore.fetchStatus()
   await recordingStore.fetchNextScheduled()
-  await updatePreview()
   updateTime()
+
+  // Start preview interval if already recording
+  if (recordingStore.isRecording) {
+    startPreviewInterval()
+  }
 
   // Set up intervals
   timeInterval = setInterval(updateTime, 1000)
-  previewInterval = setInterval(updatePreview, 1000)
   statusInterval = setInterval(updateStatus, 2000) // Check status every 2 seconds
   setInterval(updateNextScheduled, 60000) // Update next scheduled every minute
 })
 
 onUnmounted(() => {
   if (timeInterval) clearInterval(timeInterval)
-  if (previewInterval) clearInterval(previewInterval)
+  stopPreviewInterval()
   if (statusInterval) clearInterval(statusInterval)
 })
 </script>
