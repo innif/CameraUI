@@ -203,8 +203,9 @@ class FileService:
                 logger.error("Invalid time range for export")
                 return None
             
-            # Generate output path
-            output_filename = f"subclip_{filename}-{int(start_seconds)}-{int(end_seconds)}.mp4"
+            # Generate output path with format: Scheinbar_YY-MM-DD_HH-MM-{start_seconds}-{end_seconds}.mp4
+            # Using the start time of the subclip, with seconds for uniqueness
+            output_filename = f"Scheinbar_{start_datetime.strftime('%y-%m-%d_%H-%M')}-{int(start_seconds)}-{int(end_seconds)}.mp4"
             output_path = os.path.join(self.video_directory, output_filename)
             
             # Extract subclip using ffmpeg
