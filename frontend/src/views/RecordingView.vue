@@ -2,11 +2,6 @@
   <v-container class="container-max">
     <v-row>
       <v-col cols="12">
-        <div class="page-header mb-6">
-          <h1 class="page-title">Aufnahme</h1>
-          <p class="page-subtitle">Live-Aufnahmesystem für deine Performances</p>
-        </div>
-
         <!-- Tabs -->
         <v-tabs
           v-model="activeTab"
@@ -285,12 +280,42 @@ onUnmounted(() => {
   border: 1px solid rgba(var(--v-theme-primary), 0.1);
 }
 
+.modern-tabs :deep(.v-tabs) {
+  width: 100%;
+}
+
+.modern-tabs :deep(.v-slide-group__content) {
+  width: 100%;
+}
+
 .tab-item {
+  flex: 1;
   border-radius: 8px;
   transition: all 0.3s ease;
   text-transform: none;
   font-weight: 500;
   letter-spacing: 0;
+  min-height: 48px;
+  padding: 12px 16px;
+}
+
+.tab-item :deep(.v-btn__content) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile tab optimizations */
+@media (max-width: 599px) {
+  .tab-item {
+    min-height: 44px;
+    font-size: 0.9rem;
+    padding: 10px 12px;
+  }
+
+  .tab-item :deep(.v-icon) {
+    font-size: 18px !important;
+  }
 }
 
 /* Modern Cards */

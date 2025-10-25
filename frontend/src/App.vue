@@ -6,8 +6,10 @@
       class="app-bar-glass"
     >
       <v-app-bar-title class="d-flex align-center app-bar-title">
-        <v-icon icon="mdi-video" :size="isMobile ? 24 : 28" class="mr-2 mr-sm-3" color="primary"></v-icon>
-        <span class="app-title">ScheiniCam</span>
+        <router-link to="/" class="d-flex align-center text-decoration-none title-link">
+          <v-icon icon="mdi-video" :size="isMobile ? 24 : 28" class="mr-2 mr-sm-3" color="primary"></v-icon>
+          <span class="app-title">ScheiniCam</span>
+        </router-link>
       </v-app-bar-title>
 
       <v-spacer></v-spacer>
@@ -63,7 +65,7 @@
       <v-container>
         <div class="text-center footer-text">
           <v-icon icon="mdi-video" size="16" class="mr-1"></v-icon>
-          ScheiniCam - Automatisches Aufnahmesystem &copy; {{ new Date().getFullYear() }}
+          ScheiniCam - Finn Harms &copy; {{ new Date().getFullYear() }}
         </div>
       </v-container>
     </v-footer>
@@ -100,6 +102,15 @@ function toggleTheme() {
 .app-bar-title {
   flex-shrink: 1;
   min-width: 0;
+}
+
+.title-link {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.title-link:hover {
+  opacity: 0.8;
 }
 
 .app-title {
