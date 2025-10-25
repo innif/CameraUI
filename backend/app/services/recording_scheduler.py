@@ -184,6 +184,76 @@ class RecordingScheduler:
         # This is simplified - in production you'd want more robust logic
         return now.hour == shutdown_time.hour and now.minute == shutdown_time.minute
 
+    def get_next_scheduled_recording(self) -> Optional[dict]:
+        """Get information about the next scheduled recording"""
+        local_tz = ZoneInfo(settings.TIMEZONE)
+        now = datetime.now(timezone.utc).astimezone(local_tz)
+
+        # If weekdays is empty, no recordings are scheduled
+        if not settings.WEEKDAYS:
+            return None
+
+        # Try to find the next recording time within the next 7 days
+        for days_ahead in range(8):
+            check_date = now + timedelta(days=days_ahead)
+            check_weekday = check_date.weekday()
+
+            # Skip if not a recording day
+            if check_weekday not in settings.WEEKDAYS:
+                continue
+
+            # For today, check if the start time hasn't passed yet
+            if days_ahead == 0:
+                current_time = now.time()
+                # If we're before the start time, that's our next recording
+                if current_time < settings.START_TIME:
+                    next_recording = datetime.combine(check_date.date(), settings.START_TIME, tzinfo=local_tz)
+                    return self._format_next_recording(next_recording, now)
+                # If we're currently recording, next is tomorrow or next recording day
+                continue
+            else:
+                # For future days, use the start time
+                next_recording = datetime.combine(check_date.date(), settings.START_TIME, tzinfo=local_tz)
+                return self._format_next_recording(next_recording, now)
+
+        return None
+
+    def _format_next_recording(self, next_recording: datetime, now: datetime) -> dict:
+        """Format next recording information for display"""
+        # German weekday names
+        weekday_names = [
+            "Montag", "Dienstag", "Mittwoch", "Donnerstag",
+            "Freitag", "Samstag", "Sonntag"
+        ]
+
+        # Calculate time difference
+        time_until = next_recording - now
+        days_until = time_until.days
+        hours_until = time_until.seconds // 3600
+        minutes_until = (time_until.seconds % 3600) // 60
+
+        # Format day description
+        if days_until == 0:
+            day_description = "heute"
+        elif days_until == 1:
+            day_description = "morgen"
+        else:
+            day_description = weekday_names[next_recording.weekday()]
+
+        # Format time
+        time_str = next_recording.strftime("%H:%M")
+
+        return {
+            "next_recording_time": next_recording.isoformat(),
+            "day_description": day_description,
+            "time_str": time_str,
+            "days_until": days_until,
+            "hours_until": hours_until,
+            "minutes_until": minutes_until,
+            "weekday": weekday_names[next_recording.weekday()],
+            "formatted_message": f"Die Aufnahme startet automatisch {day_description} um {time_str} Uhr"
+        }
+
     async def _cleanup_loop(self):
         """Periodic cleanup loop for old files and subclips"""
         while self._running:

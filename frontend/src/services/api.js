@@ -35,6 +35,9 @@ export default {
     },
     getPreview() {
       return api.get('/api/recordings/preview')
+    },
+    getNextScheduled() {
+      return api.get('/api/recordings/next-scheduled')
     }
   },
 

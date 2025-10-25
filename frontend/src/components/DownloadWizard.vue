@@ -224,6 +224,9 @@ async function selectVideo() {
     // Set endTime to duration if available, otherwise use a safe default
     endTime.value = duration && duration > 0 ? duration : 3600
 
+    // Load initial preview at start time
+    await updatePreview(startTime.value)
+
     step.value = 2
   }
 }

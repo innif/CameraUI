@@ -10,6 +10,7 @@ export const useRecordingStore = defineStore('recording', () => {
   const previewImage = ref(null)
   const loading = ref(false)
   const error = ref(null)
+  const nextScheduledRecording = ref(null)
 
   // Computed
   const recordingStatus = computed(() => {
@@ -25,8 +26,22 @@ export const useRecordingStore = defineStore('recording', () => {
       error.value = null
       const response = await api.recording.getStatus()
 
+      const wasRecording = isRecording.value
       isRecording.value = response.data.is_recording
       isConnected.value = response.data.is_connected
+
+      // If recording status changed unexpectedly, log it
+      if (wasRecording && !response.data.is_recording) {
+        console.warn('Recording stopped unexpectedly')
+        currentFile.value = null
+      }
+
+      // Update current file if recording
+      if (response.data.is_recording && response.data.current_file) {
+        currentFile.value = response.data.current_file
+      } else if (!response.data.is_recording) {
+        currentFile.value = null
+      }
 
       return response.data
     } catch (err) {
@@ -106,6 +121,17 @@ export const useRecordingStore = defineStore('recording', () => {
     }
   }
 
+  async function fetchNextScheduled() {
+    try {
+      const response = await api.recording.getNextScheduled()
+      nextScheduledRecording.value = response.data
+      return response.data
+    } catch (err) {
+      console.error('Failed to fetch next scheduled recording:', err)
+      throw err
+    }
+  }
+
   return {
     // State
     isRecording,
@@ -114,6 +140,7 @@ export const useRecordingStore = defineStore('recording', () => {
     previewImage,
     loading,
     error,
+    nextScheduledRecording,
     // Computed
     recordingStatus,
     // Actions
@@ -121,6 +148,7 @@ export const useRecordingStore = defineStore('recording', () => {
     startRecording,
     stopRecording,
     fetchCurrentFile,
-    fetchPreview
+    fetchPreview,
+    fetchNextScheduled
   }
 })

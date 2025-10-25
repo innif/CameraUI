@@ -187,9 +187,14 @@ class FileService:
                 return None
             
             # Calculate timestamps in seconds
+            # Ensure both datetimes have the same timezone info
             start_datetime = datetime.combine(video_file.start_time.date(), start_time)
             end_datetime = datetime.combine(video_file.start_time.date(), end_time)
-            
+            if video_file.start_time.tzinfo is not None:
+                # If start_time is timezone-aware, make datetimes aware too
+                start_datetime = start_datetime.replace(tzinfo=video_file.start_time.tzinfo)
+                end_datetime = end_datetime.replace(tzinfo=video_file.start_time.tzinfo)
+
             start_seconds = (start_datetime - video_file.start_time).total_seconds()
             end_seconds = (end_datetime - video_file.start_time).total_seconds()
             
@@ -242,7 +247,11 @@ class FileService:
                 return None
             
             # Calculate timestamp in seconds
+            # Ensure both datetimes have the same timezone info
             timestamp_datetime = datetime.combine(video_file.start_time.date(), timestamp)
+            if video_file.start_time.tzinfo is not None:
+                # If start_time is timezone-aware, make timestamp_datetime aware too
+                timestamp_datetime = timestamp_datetime.replace(tzinfo=video_file.start_time.tzinfo)
             timestamp_seconds = (timestamp_datetime - video_file.start_time).total_seconds()
             
             if timestamp_seconds < 0:

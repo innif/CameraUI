@@ -45,6 +45,9 @@ class OBSService:
         while True:
             if not self.connected:
                 await self._try_connect()
+            else:
+                # Verify recording status if we think we're recording
+                await self._verify_recording_status()
             await asyncio.sleep(1)
     
     async def _try_connect(self):
@@ -75,11 +78,35 @@ class OBSService:
             self.connected = False
             logger.warning(f"Failed to connect to OBS: {e}")
     
+    async def _verify_recording_status(self):
+        """Verify that the actual recording status matches our internal state"""
+        try:
+            if self.client:
+                status = await asyncio.to_thread(self.client.get_record_status)
+                actual_recording = status.output_active
+
+                # If there's a mismatch, update our state and log it
+                if actual_recording != self.recording:
+                    logger.warning(
+                        f"Recording status mismatch detected! "
+                        f"Expected: {self.recording}, Actual: {actual_recording}. "
+                        f"Synchronizing state..."
+                    )
+                    self.recording = actual_recording
+
+                    # If recording stopped unexpectedly, clear current file
+                    if not actual_recording and self.current_file:
+                        logger.warning(f"Recording stopped unexpectedly: {self.current_file.filename}")
+                        self.current_file = None
+        except Exception as e:
+            logger.debug(f"Could not verify recording status: {e}")
+            # Don't disconnect on verification errors, just skip this check
+
     async def disconnect(self):
         """Disconnect from OBS"""
         if self._connection_task:
             self._connection_task.cancel()
-        
+
         self.connected = False
         self.client = None
         self.event_client = None

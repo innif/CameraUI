@@ -15,6 +15,18 @@ async def get_recording_status(request: Request):
     return obs_service.get_status()
 
 
+@router.get("/next-scheduled")
+async def get_next_scheduled_recording(request: Request):
+    """Get information about the next scheduled recording"""
+    scheduler = request.app.state.scheduler
+    next_recording = scheduler.get_next_scheduled_recording()
+
+    if next_recording:
+        return next_recording
+    else:
+        return {"message": "Keine automatischen Aufnahmen geplant"}
+
+
 @router.post("/start")
 async def start_recording(request: Request):
     """Manually start recording"""

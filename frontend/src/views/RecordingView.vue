@@ -71,11 +71,48 @@
               <div class="text-caption mt-1">Bitte warten oder Administrator kontaktieren.</div>
             </v-alert>
 
-            <!-- Current Time -->
-            <v-card class="mb-6 modern-card time-card" elevation="0">
-              <v-card-text class="text-center pa-8">
-                <div class="time-display">{{ currentTime }}</div>
-                <p class="time-label mt-2">Aktuelle Uhrzeit</p>
+            <!-- Recording Status -->
+            <v-card class="mb-6 modern-card status-card" elevation="0">
+              <v-card-text class="pa-6">
+                <div class="d-flex align-center justify-space-between mb-4">
+                  <div>
+                    <h3 class="status-title">Aufnahmestatus</h3>
+                    <p class="status-description mt-1">{{ recordingStore.recordingStatus }}</p>
+                  </div>
+                  <v-chip
+                    :color="recordingStore.isRecording ? 'error' : 'success'"
+                    size="large"
+                    class="status-chip"
+                    variant="flat"
+                  >
+                    <v-icon start size="20">
+                      {{ recordingStore.isRecording ? 'mdi-record-circle' : 'mdi-circle-outline' }}
+                    </v-icon>
+                    {{ recordingStore.isRecording ? 'Aufnahme läuft' : 'Bereit' }}
+                  </v-chip>
+                </div>
+
+                <!-- Next Scheduled Recording Info -->
+                <div v-if="!recordingStore.isRecording && recordingStore.nextScheduledRecording && recordingStore.nextScheduledRecording.formatted_message" class="next-recording-info">
+                  <v-icon color="primary" size="20" class="mr-2">mdi-clock-outline</v-icon>
+                  <span class="next-recording-text">
+                    {{ recordingStore.nextScheduledRecording.formatted_message }}
+                  </span>
+                </div>
+
+                <v-divider class="my-4"></v-divider>
+
+                <v-btn
+                  color="primary"
+                  block
+                  size="x-large"
+                  class="action-btn"
+                  @click="activeTab = 'archive'"
+                  variant="flat"
+                >
+                  <v-icon start>mdi-download</v-icon>
+                  Zum Videoarchiv
+                </v-btn>
               </v-card-text>
             </v-card>
 
@@ -104,40 +141,11 @@
               </v-card-text>
             </v-card>
 
-            <!-- Recording Status -->
-            <v-card class="modern-card status-card" elevation="0">
-              <v-card-text class="pa-6">
-                <div class="d-flex align-center justify-space-between mb-4">
-                  <div>
-                    <h3 class="status-title">Aufnahmestatus</h3>
-                    <p class="status-description mt-1">{{ recordingStore.recordingStatus }}</p>
-                  </div>
-                  <v-chip
-                    :color="recordingStore.isRecording ? 'error' : 'success'"
-                    size="large"
-                    class="status-chip"
-                    variant="flat"
-                  >
-                    <v-icon start size="20">
-                      {{ recordingStore.isRecording ? 'mdi-record-circle' : 'mdi-circle-outline' }}
-                    </v-icon>
-                    {{ recordingStore.isRecording ? 'Aufnahme läuft' : 'Bereit' }}
-                  </v-chip>
-                </div>
-
-                <v-divider class="my-4"></v-divider>
-
-                <v-btn
-                  color="primary"
-                  block
-                  size="x-large"
-                  class="action-btn"
-                  @click="activeTab = 'archive'"
-                  variant="flat"
-                >
-                  <v-icon start>mdi-download</v-icon>
-                  Zum Videoarchiv
-                </v-btn>
+            <!-- Current Time -->
+            <v-card class="modern-card time-card" elevation="0">
+              <v-card-text class="text-center pa-8">
+                <div class="time-display">{{ currentTime }}</div>
+                <p class="time-label mt-2">Aktuelle Uhrzeit</p>
               </v-card-text>
             </v-card>
           </v-window-item>
@@ -186,15 +194,31 @@ async function updatePreview() {
 // Update status
 async function updateStatus() {
   try {
+    const wasRecording = recordingStore.isRecording
     await recordingStore.fetchStatus()
+
+    // Check if recording stopped unexpectedly
+    if (wasRecording && !recordingStore.isRecording) {
+      console.warn('Recording stopped unexpectedly - interface status synchronized')
+    }
   } catch (err) {
     console.error('Failed to update status:', err)
+  }
+}
+
+// Update next scheduled recording
+async function updateNextScheduled() {
+  try {
+    await recordingStore.fetchNextScheduled()
+  } catch (err) {
+    console.error('Failed to update next scheduled recording:', err)
   }
 }
 
 onMounted(async () => {
   // Initial fetch
   await recordingStore.fetchStatus()
+  await recordingStore.fetchNextScheduled()
   await updatePreview()
   updateTime()
 
@@ -202,6 +226,7 @@ onMounted(async () => {
   timeInterval = setInterval(updateTime, 1000)
   previewInterval = setInterval(updatePreview, 1000)
   statusInterval = setInterval(updateStatus, 2000) // Check status every 2 seconds
+  setInterval(updateNextScheduled, 60000) // Update next scheduled every minute
 })
 
 onUnmounted(() => {
@@ -334,6 +359,23 @@ onUnmounted(() => {
   font-weight: 600;
   padding: 0.75rem 1.25rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Next Recording Info */
+.next-recording-info {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  margin-top: 1rem;
+  background: rgba(var(--v-theme-primary), 0.08);
+  border-radius: 12px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.15);
+}
+
+.next-recording-text {
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgb(var(--v-theme-primary));
 }
 
 /* Action Button */
