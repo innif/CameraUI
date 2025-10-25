@@ -276,7 +276,6 @@ onUnmounted(() => {
   border-radius: 12px;
   background: rgba(var(--v-theme-surface), 0.6);
   backdrop-filter: blur(10px);
-  padding: 4px;
   border: 1px solid rgba(var(--v-theme-primary), 0.1);
 }
 
@@ -296,7 +295,6 @@ onUnmounted(() => {
   font-weight: 500;
   letter-spacing: 0;
   min-height: 48px;
-  padding: 12px 16px;
 }
 
 .tab-item :deep(.v-btn__content) {

@@ -47,7 +47,10 @@ class Settings(BaseSettings):
     
     # WebSocket settings
     WS_HEARTBEAT_INTERVAL: int = 30
-    
+
+    # Authentication
+    WEB_PASSWORD: str = "deinSicheresPasswort123"
+
     class Config:
         env_file = ".env"
         case_sensitive = True

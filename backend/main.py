@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-from app.api import recordings, admin, settings, health
+from app.api import recordings, admin, settings, health, auth
 from app.core.config import settings as app_settings
 from app.services.recording_scheduler import RecordingScheduler
 from app.services.obs_service import OBSService
@@ -90,6 +90,7 @@ app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
 # Include routers
 app.include_router(health.router, prefix="/api", tags=["health"])
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(recordings.router, prefix="/api/recordings", tags=["recordings"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
