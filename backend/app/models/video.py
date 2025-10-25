@@ -1,14 +1,24 @@
 from pydantic import BaseModel, Field
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, timedelta, timezone
 from typing import Optional
 import json
+from zoneinfo import ZoneInfo
+
+
+def _generate_filename() -> str:
+    """Generate filename based on current local time"""
+    from app.core.config import settings
+    utc_now = datetime.now(timezone.utc)
+    local_tz = ZoneInfo(settings.TIMEZONE)
+    local_now = utc_now.astimezone(local_tz)
+    return local_now.strftime("%y-%m-%d--%H-%M-%S")
 
 
 class VideoFile(BaseModel):
     """Model representing a video file"""
 
-    filename: str = Field(default_factory=lambda: datetime.now().strftime("%y-%m-%d--%H-%M-%S"))
-    start_time: datetime = Field(default_factory=datetime.now)
+    filename: str = Field(default_factory=_generate_filename)
+    start_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     end_time: Optional[datetime] = None
     
     class Config:
@@ -31,26 +41,63 @@ class VideoFile(BaseModel):
     @property
     def age(self) -> timedelta:
         """Get age of the video file"""
-        return datetime.now() - self.start_time
+        now = datetime.now(timezone.utc)
+        start = self.start_time
+
+        # Handle naive datetimes (legacy data) - assume they are in local timezone
+        if start.tzinfo is None:
+            from app.core.config import settings
+            local_tz = ZoneInfo(settings.TIMEZONE)
+            start = start.replace(tzinfo=local_tz).astimezone(timezone.utc)
+
+        return now - start
     
     def get_descriptor(self) -> str:
-        """Get human-readable descriptor"""
+        """Get human-readable descriptor in local timezone"""
+        from app.core.config import settings
+
+        # Convert UTC times to local timezone for display
+        local_tz = ZoneInfo(settings.TIMEZONE)
+
+        # Handle naive datetimes (legacy data) - assume they are already in local timezone
+        if self.start_time.tzinfo is None:
+            start_local = self.start_time
+        else:
+            start_local = self.start_time.astimezone(local_tz)
+
         if self.end_time is None:
             return "{} (seit {} laufend)".format(
-                self.start_time.strftime("%A, %d.%m.%Y"),
-                self.start_time.strftime("%H:%M Uhr")
+                start_local.strftime("%A, %d.%m.%Y"),
+                start_local.strftime("%H:%M Uhr")
             )
-        
+
+        # Handle naive end_time
+        if self.end_time.tzinfo is None:
+            end_local = self.end_time
+        else:
+            end_local = self.end_time.astimezone(local_tz)
+
         return "{} ({} - {})".format(
-            self.start_time.strftime("%A, %d.%m.%Y"),
-            self.start_time.strftime("%H:%M"),
-            self.end_time.strftime("%H:%M")
+            start_local.strftime("%A, %d.%m.%Y"),
+            start_local.strftime("%H:%M"),
+            end_local.strftime("%H:%M")
         )
     
     def get_download_filename(self, selected_time: time) -> str:
-        """Get download filename for exported video"""
+        """Get download filename for exported video in local timezone"""
+        from app.core.config import settings
+
+        # Convert UTC time to local timezone for filename
+        local_tz = ZoneInfo(settings.TIMEZONE)
+
+        # Handle naive datetimes (legacy data) - assume they are already in local timezone
+        if self.start_time.tzinfo is None:
+            start_local = self.start_time
+        else:
+            start_local = self.start_time.astimezone(local_tz)
+
         return "Scheinbar_{}_{}.mp4".format(
-            self.start_time.strftime("%Y-%m-%d"),
+            start_local.strftime("%Y-%m-%d"),
             selected_time.strftime("%H-%M")
         )
     
@@ -68,15 +115,30 @@ class VideoFile(BaseModel):
     
     @classmethod
     def from_json_file(cls, filepath: str) -> Optional["VideoFile"]:
-        """Load from JSON file"""
+        """Load from JSON file and handle legacy naive datetimes"""
         try:
             with open(filepath, 'r') as f:
                 data = json.load(f)
-            
+
+            # Parse timestamps
+            start_time = datetime.fromisoformat(data["start_time"])
+            end_time = datetime.fromisoformat(data["end_time"]) if data.get("end_time") else None
+
+            # Convert naive datetimes to timezone-aware (assume local timezone for legacy data)
+            if start_time.tzinfo is None:
+                from app.core.config import settings
+                local_tz = ZoneInfo(settings.TIMEZONE)
+                start_time = start_time.replace(tzinfo=local_tz).astimezone(timezone.utc)
+
+            if end_time and end_time.tzinfo is None:
+                from app.core.config import settings
+                local_tz = ZoneInfo(settings.TIMEZONE)
+                end_time = end_time.replace(tzinfo=local_tz).astimezone(timezone.utc)
+
             return cls(
                 filename=data["filename"],
-                start_time=datetime.fromisoformat(data["start_time"]),
-                end_time=datetime.fromisoformat(data["end_time"]) if data.get("end_time") else None
+                start_time=start_time,
+                end_time=end_time
             )
         except Exception as e:
             print(f"Error loading video file from JSON: {e}")

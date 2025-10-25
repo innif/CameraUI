@@ -1,7 +1,8 @@
 import asyncio
 import logging
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, timedelta, timezone
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from app.services.obs_service import OBSService
 from app.services.file_service import FileService
@@ -31,6 +32,7 @@ class RecordingScheduler:
         self._task = asyncio.create_task(self._scheduler_loop())
         self._cleanup_task = asyncio.create_task(self._cleanup_loop())
         logger.info("Recording scheduler started")
+        logger.info(f"Recording schedule: {settings.WEEKDAYS} from {settings.START_TIME} to {settings.END_TIME}")
     
     async def stop(self):
         """Stop the scheduler"""
@@ -158,20 +160,24 @@ class RecordingScheduler:
     
     def _is_recording_time(self) -> bool:
         """Check if current time is within recording schedule"""
-        now = datetime.now()
+        # Get current time in local timezone
+        local_tz = ZoneInfo(settings.TIMEZONE)
+        now = datetime.now(timezone.utc).astimezone(local_tz)
         current_time = now.time()
         current_weekday = now.weekday()
-        
+
         # Check if today is a recording day
         if current_weekday not in settings.WEEKDAYS:
             return False
-        
+
         # Check if current time is within recording hours
         return settings.START_TIME <= current_time <= settings.END_TIME
     
     def _is_shutdown_time(self) -> bool:
         """Check if it's time to shutdown"""
-        now = datetime.now().time()
+        # Get current time in local timezone
+        local_tz = ZoneInfo(settings.TIMEZONE)
+        now = datetime.now(timezone.utc).astimezone(local_tz).time()
         shutdown_time = settings.SHUTDOWN_TIME
 
         # Create a 10-second window around shutdown time
@@ -191,7 +197,7 @@ class RecordingScheduler:
 
     async def _run_cleanup(self):
         """Run cleanup tasks"""
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         cleanup_interval = timedelta(seconds=settings.cleanup_interval)
 
         # Run cleanup if it hasn't been done yet or if enough time has passed

@@ -162,6 +162,7 @@ const activeTab = ref('recording')
 const currentTime = ref('')
 let timeInterval = null
 let previewInterval = null
+let statusInterval = null
 
 // Update current time
 function updateTime() {
@@ -182,6 +183,15 @@ async function updatePreview() {
   }
 }
 
+// Update status
+async function updateStatus() {
+  try {
+    await recordingStore.fetchStatus()
+  } catch (err) {
+    console.error('Failed to update status:', err)
+  }
+}
+
 onMounted(async () => {
   // Initial fetch
   await recordingStore.fetchStatus()
@@ -191,11 +201,13 @@ onMounted(async () => {
   // Set up intervals
   timeInterval = setInterval(updateTime, 1000)
   previewInterval = setInterval(updatePreview, 1000)
+  statusInterval = setInterval(updateStatus, 2000) // Check status every 2 seconds
 })
 
 onUnmounted(() => {
   if (timeInterval) clearInterval(timeInterval)
   if (previewInterval) clearInterval(previewInterval)
+  if (statusInterval) clearInterval(statusInterval)
 })
 </script>
 

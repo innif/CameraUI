@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from app.api import recordings, admin, settings, health
 from app.core.config import settings as app_settings
@@ -11,9 +12,11 @@ from app.services.recording_scheduler import RecordingScheduler
 from app.services.obs_service import OBSService
 from app.services.file_service import FileService
 
-# Configure logging
+# Configure logging with local timezone for filename
+_local_tz = ZoneInfo(app_settings.TIMEZONE)
+_log_time = datetime.now(timezone.utc).astimezone(_local_tz)
 logging.basicConfig(
-    filename=f'logs/log_{datetime.now().strftime("%y-%m-%d--%H-%M-%S")}.log',
+    filename=f'logs/log_{_log_time.strftime("%y-%m-%d--%H-%M-%S")}.log',
     encoding='utf-8',
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'

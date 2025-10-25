@@ -14,8 +14,11 @@ services:
       - ./backend/logs:/app/logs
       - ./backend/assets:/app/assets
       - ./backend/settings.json:/app/settings.json
+    env_file:
+      - .env
     environment:
-      - DEBUG=False
+      # Override specific values if needed
+      - DEBUG=${DEBUG:-False}
       - OBS_HOST=${OBS_HOST:-host.docker.internal}
       - OBS_PORT=${OBS_PORT:-4455}
       - OBS_PASSWORD=${OBS_PASSWORD}

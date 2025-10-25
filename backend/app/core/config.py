@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     END_TIME: time = time(22, 10, 0)
     SHUTDOWN_TIME: time = time(1, 0, 0)
     WEEKDAYS: Union[List[int], str] = [0, 1, 2, 3, 4, 5, 6]  # Monday=0, Sunday=6
+
+    # Timezone settings
+    TIMEZONE: str = "Europe/Berlin"  # Local timezone for display and scheduling
     
     @field_validator('WEEKDAYS', mode='before')
     @classmethod
@@ -82,7 +85,9 @@ class Settings(BaseSettings):
                 data['WEEKDAYS'] = data.pop('weekdays')
             if 'show_logo' in data:
                 data['SHOW_LOGO'] = data.pop('show_logo')
-            
+            if 'timezone' in data:
+                data['TIMEZONE'] = data.pop('timezone')
+
             # Handle OBS settings
             if 'obs_settings' in data:
                 obs = data.pop('obs_settings')
@@ -105,6 +110,7 @@ class Settings(BaseSettings):
             "cleanup_interval": self.CLEANUP_INTERVAL_SECONDS,
             "weekdays": self.WEEKDAYS,
             "show_logo": self.SHOW_LOGO,
+            "timezone": self.TIMEZONE,
             "obs_settings": {
                 "host": self.OBS_HOST,
                 "port": self.OBS_PORT,

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -21,7 +21,7 @@ async def health_check(request: Request):
     
     return HealthResponse(
         status="healthy" if obs_service.connected else "degraded",
-        timestamp=datetime.now(),
+        timestamp=datetime.now(timezone.utc),
         obs_connected=obs_service.connected,
         recording=obs_service.recording,
         version="2.0.0"
@@ -31,4 +31,4 @@ async def health_check(request: Request):
 @router.get("/ping")
 async def ping():
     """Simple ping endpoint"""
-    return {"status": "ok", "timestamp": datetime.now().isoformat()}
+    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}

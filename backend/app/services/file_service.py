@@ -2,7 +2,7 @@ import os
 import logging
 import asyncio
 from typing import List, Optional, Dict
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, timedelta, timezone
 import cv2
 import base64
 from io import BytesIO
@@ -372,12 +372,12 @@ class FileService:
             if not os.path.exists(log_directory):
                 return 0
 
-            now = datetime.now()
+            now = datetime.now(timezone.utc)
 
             for filename in os.listdir(log_directory):
                 if filename.endswith(".log"):
                     filepath = os.path.join(log_directory, filename)
-                    file_mtime = datetime.fromtimestamp(os.path.getmtime(filepath))
+                    file_mtime = datetime.fromtimestamp(os.path.getmtime(filepath), tz=timezone.utc)
                     file_age = now - file_mtime
 
                     if file_age > max_age:
