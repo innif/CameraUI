@@ -132,16 +132,15 @@ Vollständige Dokumentation: `http://localhost:8000/docs`
 
 ## Konfiguration
 
+Alle Einstellungen werden über die `.env`-Datei konfiguriert:
+
 ### Aufnahmezeiten
 
-In `settings.json` oder über Umgebungsvariablen:
-
-```json
-{
-    "start_time": "19:50:00",
-    "end_time": "22:10:00",
-    "weekdays": [2, 3, 4, 5, 6]
-}
+```env
+START_TIME=19:50:00
+END_TIME=22:10:00
+SHUTDOWN_TIME=01:00:00
+WEEKDAYS=0,1,2,3,4,5,6
 ```
 
 ### OBS-Verbindung
@@ -150,6 +149,16 @@ In `settings.json` oder über Umgebungsvariablen:
 OBS_HOST=localhost
 OBS_PORT=4455
 OBS_PASSWORD=your_password
+```
+
+### Weitere Einstellungen
+
+```env
+DEBUG=False
+TIMEZONE=Europe/Berlin
+DELETE_AGE_SECONDS=1209600
+CLEANUP_INTERVAL_SECONDS=3600
+SHOW_LOGO=True
 ```
 
 ## Migration vom alten System

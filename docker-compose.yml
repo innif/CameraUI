@@ -13,7 +13,6 @@ services:
       - ./backend/videos:/app/videos
       - ./backend/logs:/app/logs
       - ./backend/assets:/app/assets
-      - ./backend/settings.json:/app/settings.json
     env_file:
       - .env
     environment:

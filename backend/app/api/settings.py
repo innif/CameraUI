@@ -72,48 +72,8 @@ async def update_settings(
         obs_service = request.app.state.obs_service
         import asyncio
         await asyncio.to_thread(obs_service.set_logo, settings_update.show_logo)
-    
-    # Save to file
-    app_settings.save_to_json()
-    
+
     return {
         "success": True,
-        "message": "Settings updated successfully"
-    }
-
-
-@router.post("/reload")
-async def reload_settings(request: Request):
-    """Reload settings from file"""
-    global app_settings
-    from app.core.config import Settings
-    
-    # Reload from JSON
-    new_settings = Settings.load_from_json()
-    
-    # Update global settings
-    app_settings.START_TIME = new_settings.START_TIME
-    app_settings.END_TIME = new_settings.END_TIME
-    app_settings.SHUTDOWN_TIME = new_settings.SHUTDOWN_TIME
-    app_settings.WEEKDAYS = new_settings.WEEKDAYS
-    app_settings.DELETE_AGE_SECONDS = new_settings.DELETE_AGE_SECONDS
-    app_settings.SHOW_LOGO = new_settings.SHOW_LOGO
-    app_settings.OBS_HOST = new_settings.OBS_HOST
-    app_settings.OBS_PORT = new_settings.OBS_PORT
-    app_settings.OBS_PASSWORD = new_settings.OBS_PASSWORD
-    
-    return {
-        "success": True,
-        "message": "Settings reloaded from file"
-    }
-
-
-@router.post("/save")
-async def save_settings(request: Request):
-    """Save current settings to file"""
-    app_settings.save_to_json()
-    
-    return {
-        "success": True,
-        "message": "Settings saved to file"
+        "message": "Settings updated successfully (restart required to persist)"
     }

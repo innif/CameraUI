@@ -121,7 +121,8 @@ docker-compose up -d
 
 ### Settings
 - `GET /api/settings/` - Abrufen
-- `PUT /api/settings/` - Ändern
-- `POST /api/settings/save` - Speichern
+- `PUT /api/settings/` - Ändern (Neustart erforderlich zum Persistieren)
+
+**Hinweis:** Einstellungen werden nur noch über die `.env`-Datei konfiguriert. Änderungen über die API sind zur Laufzeit möglich, werden aber nicht automatisch in die `.env`-Datei zurückgeschrieben. Um Einstellungen dauerhaft zu ändern, bearbeite die `.env`-Datei und starte das Backend neu.
 
 **Vollständige Docs:** http://localhost:8000/docs

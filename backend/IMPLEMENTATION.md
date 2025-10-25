@@ -63,9 +63,7 @@
 
 #### Settings API (`/api/settings/`)
 - ✅ `GET /` - Einstellungen abrufen
-- ✅ `PUT /` - Einstellungen aktualisieren
-- ✅ `POST /reload` - Von Datei neu laden
-- ✅ `POST /save` - In Datei speichern
+- ✅ `PUT /` - Einstellungen aktualisieren (zur Laufzeit)
 
 #### Health API (`/api/`)
 - ✅ `GET /health` - Health-Check
@@ -74,7 +72,6 @@
 ### 🔧 Konfiguration & Setup
 
 - ✅ Pydantic Settings mit .env Support
-- ✅ JSON Settings-File (kompatibel mit Original)
 - ✅ Docker & Docker Compose Setup
 - ✅ CORS Middleware
 - ✅ Static File Serving
@@ -135,9 +132,8 @@
    - ✅ Log-Verwaltung
 
 6. **Settings**
-   - ✅ Persistente Konfiguration
-   - ✅ Runtime-Updates
-   - ✅ JSON-Kompatibilität
+   - ✅ Persistente Konfiguration über .env
+   - ✅ Runtime-Updates möglich
 
 ## 🆕 Neue Features (vs. Original)
 
