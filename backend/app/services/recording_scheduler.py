@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from typing import Optional
 
 from app.services.obs_service import OBSService
@@ -12,21 +12,24 @@ logger = logging.getLogger(__name__)
 
 class RecordingScheduler:
     """Service for automatic recording scheduling"""
-    
+
     def __init__(self, obs_service: OBSService, file_service: FileService):
         self.obs_service = obs_service
         self.file_service = file_service
         self.auto_started = False
         self._task: Optional[asyncio.Task] = None
+        self._cleanup_task: Optional[asyncio.Task] = None
         self._running = False
+        self._last_cleanup: Optional[datetime] = None
     
     async def start(self):
         """Start the scheduler"""
         if self._running:
             return
-        
+
         self._running = True
         self._task = asyncio.create_task(self._scheduler_loop())
+        self._cleanup_task = asyncio.create_task(self._cleanup_loop())
         logger.info("Recording scheduler started")
     
     async def stop(self):
@@ -36,6 +39,12 @@ class RecordingScheduler:
             self._task.cancel()
             try:
                 await self._task
+            except asyncio.CancelledError:
+                pass
+        if self._cleanup_task:
+            self._cleanup_task.cancel()
+            try:
+                await self._cleanup_task
             except asyncio.CancelledError:
                 pass
         logger.info("Recording scheduler stopped")
@@ -164,7 +173,47 @@ class RecordingScheduler:
         """Check if it's time to shutdown"""
         now = datetime.now().time()
         shutdown_time = settings.SHUTDOWN_TIME
-        
+
         # Create a 10-second window around shutdown time
         # This is simplified - in production you'd want more robust logic
         return now.hour == shutdown_time.hour and now.minute == shutdown_time.minute
+
+    async def _cleanup_loop(self):
+        """Periodic cleanup loop for old files and subclips"""
+        while self._running:
+            try:
+                await self._run_cleanup()
+            except Exception as e:
+                logger.error(f"Error in cleanup loop: {e}")
+
+            # Run cleanup based on configured interval
+            await asyncio.sleep(settings.cleanup_interval)
+
+    async def _run_cleanup(self):
+        """Run cleanup tasks"""
+        now = datetime.now()
+        cleanup_interval = timedelta(seconds=settings.cleanup_interval)
+
+        # Run cleanup if it hasn't been done yet or if enough time has passed
+        if self._last_cleanup is None or (now - self._last_cleanup) >= cleanup_interval:
+            logger.info("Running periodic cleanup tasks")
+
+            # Delete old video files
+            if settings.delete_age:
+                deleted_count = await self.file_service.delete_old_files(settings.delete_age)
+                logger.info(f"Cleanup: Deleted {deleted_count} old video files")
+
+            # Delete subclips
+            subclip_count = await self.file_service.delete_subclips()
+            logger.info(f"Cleanup: Deleted {subclip_count} subclip files")
+
+            # Delete old log files (keep logs for the same duration as videos)
+            if settings.delete_age:
+                log_count = await self.file_service.delete_old_logs(
+                    settings.delete_age,
+                    settings.LOGS_DIRECTORY
+                )
+                logger.info(f"Cleanup: Deleted {log_count} old log files")
+
+            self._last_cleanup = now
+            logger.info("Periodic cleanup completed")

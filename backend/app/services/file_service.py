@@ -352,7 +352,7 @@ class FileService:
     def get_filesize_string(self, filepath: str) -> str:
         """Get human-readable file size"""
         size = self.get_filesize(filepath)
-        
+
         if size < 1024:
             return f"{size} B"
         elif size < 1024**2:
@@ -363,3 +363,30 @@ class FileService:
             return f"{size/1024**3:.2f} GB"
         else:
             return f"{size/1024**4:.2f} TB"
+
+    async def delete_old_logs(self, max_age: timedelta, log_directory: str = "logs") -> int:
+        """Delete log files older than specified age"""
+        deleted_count = 0
+
+        try:
+            if not os.path.exists(log_directory):
+                return 0
+
+            now = datetime.now()
+
+            for filename in os.listdir(log_directory):
+                if filename.endswith(".log"):
+                    filepath = os.path.join(log_directory, filename)
+                    file_mtime = datetime.fromtimestamp(os.path.getmtime(filepath))
+                    file_age = now - file_mtime
+
+                    if file_age > max_age:
+                        os.remove(filepath)
+                        deleted_count += 1
+                        logger.info(f"Deleted old log file: {filename}")
+
+        except Exception as e:
+            logger.exception(e)
+            logger.error("Error deleting old log files")
+
+        return deleted_count

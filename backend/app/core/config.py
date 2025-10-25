@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     
     # File management
     DELETE_AGE_SECONDS: float = 1209600.0  # 14 days
+    CLEANUP_INTERVAL_SECONDS: int = 3600  # 1 hour
     VIDEO_DIRECTORY: str = "videos"
     ASSETS_DIRECTORY: str = "assets"
     LOGS_DIRECTORY: str = "logs"
@@ -53,6 +54,11 @@ class Settings(BaseSettings):
     def delete_age(self) -> timedelta:
         """Get delete age as timedelta"""
         return timedelta(seconds=self.DELETE_AGE_SECONDS)
+
+    @property
+    def cleanup_interval(self) -> int:
+        """Get cleanup interval in seconds"""
+        return self.CLEANUP_INTERVAL_SECONDS
     
     @classmethod
     def load_from_json(cls, filepath: str = "settings.json"):
@@ -70,6 +76,8 @@ class Settings(BaseSettings):
                 data['SHUTDOWN_TIME'] = time.fromisoformat(data.pop('shutdown_time'))
             if 'delete_age' in data:
                 data['DELETE_AGE_SECONDS'] = data.pop('delete_age')
+            if 'cleanup_interval' in data:
+                data['CLEANUP_INTERVAL_SECONDS'] = data.pop('cleanup_interval')
             if 'weekdays' in data:
                 data['WEEKDAYS'] = data.pop('weekdays')
             if 'show_logo' in data:
@@ -94,6 +102,7 @@ class Settings(BaseSettings):
             "end_time": self.END_TIME.isoformat(),
             "shutdown_time": self.SHUTDOWN_TIME.isoformat(),
             "delete_age": self.DELETE_AGE_SECONDS,
+            "cleanup_interval": self.CLEANUP_INTERVAL_SECONDS,
             "weekdays": self.WEEKDAYS,
             "show_logo": self.SHOW_LOGO,
             "obs_settings": {

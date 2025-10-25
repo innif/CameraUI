@@ -273,8 +273,8 @@ class OBSService:
     def get_status(self) -> dict:
         """Get current OBS status"""
         return {
-            "connected": self.connected,
-            "recording": self.recording,
+            "is_connected": self.connected,
+            "is_recording": self.recording,
             "muted": self.muted,
             "current_file": self.current_file.filename if self.current_file else None
         }
