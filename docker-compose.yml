@@ -22,6 +22,9 @@ services:
       - OBS_PORT=${OBS_PORT:-4455}
       - OBS_PASSWORD=${OBS_PASSWORD}
     restart: unless-stopped
+    # Für Linux: Wenn OBS auf dem Host läuft, extra_hosts hinzufügen
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - scheinicam-network
 
