@@ -5,16 +5,17 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = ref(false)
   const authError = ref(null)
 
-  // Check if user is already authenticated (from sessionStorage)
+  // Check if user is already authenticated (from sessionStorage or localStorage)
   const checkAuth = () => {
-    const auth = sessionStorage.getItem('auth')
-    if (auth === 'true') {
+    const sessionAuth = sessionStorage.getItem('auth')
+    const localAuth = localStorage.getItem('auth')
+    if (sessionAuth === 'true' || localAuth === 'true') {
       isAuthenticated.value = true
     }
   }
 
   // Attempt login with password
-  const login = async (password) => {
+  const login = async (password, rememberMe = false) => {
     authError.value = null
 
     try {
@@ -30,7 +31,15 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (response.ok && data.success) {
         isAuthenticated.value = true
-        sessionStorage.setItem('auth', 'true')
+
+        // Store auth based on "remember me" preference
+        if (rememberMe) {
+          localStorage.setItem('auth', 'true')
+          localStorage.setItem('rememberMe', 'true')
+        } else {
+          sessionStorage.setItem('auth', 'true')
+        }
+
         return true
       } else {
         authError.value = 'Falsches Passwort'
@@ -47,6 +56,8 @@ export const useAuthStore = defineStore('auth', () => {
   const logout = () => {
     isAuthenticated.value = false
     sessionStorage.removeItem('auth')
+    localStorage.removeItem('auth')
+    localStorage.removeItem('rememberMe')
   }
 
   // Initialize auth state

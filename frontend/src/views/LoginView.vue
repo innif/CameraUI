@@ -13,6 +13,20 @@
 
           <v-card-text class="pa-6">
             <v-form @submit.prevent="handleLogin">
+              <!-- Hidden username field to help browsers recognize this as a login form -->
+              <v-text-field
+                v-model="username"
+                label="Benutzername"
+                type="text"
+                variant="outlined"
+                prepend-inner-icon="mdi-account"
+                :disabled="loading"
+                autocomplete="username"
+                class="mb-4"
+                style="display: none;"
+                value="user"
+              ></v-text-field>
+
               <v-text-field
                 v-model="password"
                 label="Passwort"
@@ -25,7 +39,17 @@
                 autofocus
                 @keyup.enter="handleLogin"
                 class="mb-4"
+                name="password"
               ></v-text-field>
+
+              <v-checkbox
+                v-model="rememberMe"
+                label="Angemeldet bleiben"
+                :disabled="loading"
+                color="primary"
+                hide-details
+                class="mb-4"
+              ></v-checkbox>
 
               <v-btn
                 type="submit"
@@ -55,9 +79,17 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
+const username = ref('user')
 const password = ref('')
+const rememberMe = ref(false)
 const loading = ref(false)
 const errorMessage = ref('')
+
+// Initialize rememberMe checkbox from localStorage
+const savedRememberMe = localStorage.getItem('rememberMe')
+if (savedRememberMe === 'true') {
+  rememberMe.value = true
+}
 
 const handleLogin = async () => {
   if (!password.value) return
@@ -65,7 +97,7 @@ const handleLogin = async () => {
   loading.value = true
   errorMessage.value = ''
 
-  const success = await authStore.login(password.value)
+  const success = await authStore.login(password.value, rememberMe.value)
 
   if (success) {
     // Redirect to home or intended route
