@@ -58,6 +58,9 @@ export default {
     shutdown() {
       return api.post('/api/admin/shutdown')
     },
+    restart() {
+      return api.post('/api/admin/restart')
+    },
     checkAudio() {
       return api.get('/api/admin/audio/check')
     },

@@ -166,15 +166,30 @@
 
             <v-divider class="my-4"></v-divider>
 
-            <v-btn
-              color="error"
-              block
-              :loading="adminStore.loading"
-              @click="confirmShutdown"
-            >
-              <v-icon start>mdi-power</v-icon>
-              Computer herunterfahren
-            </v-btn>
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-btn
+                  color="warning"
+                  block
+                  :loading="adminStore.loading"
+                  @click="confirmRestart"
+                >
+                  <v-icon start>mdi-restart</v-icon>
+                  Neustart
+                </v-btn>
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-btn
+                  color="error"
+                  block
+                  :loading="adminStore.loading"
+                  @click="confirmShutdown"
+                >
+                  <v-icon start>mdi-power</v-icon>
+                  Herunterfahren
+                </v-btn>
+              </v-col>
+            </v-row>
           </v-card-text>
         </v-card>
 
@@ -266,15 +281,53 @@
     <!-- Shutdown Confirmation Dialog -->
     <v-dialog v-model="showShutdownDialog" max-width="500">
       <v-card>
-        <v-card-title>Computer herunterfahren?</v-card-title>
+        <v-card-title class="text-h5">
+          <v-icon start color="error">mdi-power</v-icon>
+          Computer herunterfahren?
+        </v-card-title>
         <v-card-text>
-          Möchtest du den Computer wirklich herunterfahren?
-          Diese Aktion kann nicht rückgängig gemacht werden.
+          <v-alert type="warning" variant="tonal" class="mb-3">
+            Möchtest du den Computer wirklich herunterfahren?
+          </v-alert>
+          <p class="text-body-2">
+            Diese Aktion kann nicht rückgängig gemacht werden.
+            Der Computer wird vollständig heruntergefahren.
+          </p>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn @click="showShutdownDialog = false">Abbrechen</v-btn>
-          <v-btn color="error" @click="shutdown">Herunterfahren</v-btn>
+          <v-btn variant="text" @click="showShutdownDialog = false">Abbrechen</v-btn>
+          <v-btn color="error" variant="elevated" @click="shutdown">
+            <v-icon start>mdi-power</v-icon>
+            Herunterfahren
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Restart Confirmation Dialog -->
+    <v-dialog v-model="showRestartDialog" max-width="500">
+      <v-card>
+        <v-card-title class="text-h5">
+          <v-icon start color="warning">mdi-restart</v-icon>
+          Computer neu starten?
+        </v-card-title>
+        <v-card-text>
+          <v-alert type="warning" variant="tonal" class="mb-3">
+            Möchtest du den Computer wirklich neu starten?
+          </v-alert>
+          <p class="text-body-2">
+            Diese Aktion kann nicht rückgängig gemacht werden.
+            Der Computer wird neu gestartet.
+          </p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn variant="text" @click="showRestartDialog = false">Abbrechen</v-btn>
+          <v-btn color="warning" variant="elevated" @click="restart">
+            <v-icon start>mdi-restart</v-icon>
+            Neustart
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -309,6 +362,7 @@ const recordingStore = useRecordingStore()
 const videosStore = useVideosStore()
 
 const showShutdownDialog = ref(false)
+const showRestartDialog = ref(false)
 const showDeleteLogsDialog = ref(false)
 
 function confirmShutdown() {
@@ -318,6 +372,15 @@ function confirmShutdown() {
 async function shutdown() {
   showShutdownDialog.value = false
   await adminStore.shutdownSystem()
+}
+
+function confirmRestart() {
+  showRestartDialog.value = true
+}
+
+async function restart() {
+  showRestartDialog.value = false
+  await adminStore.restartSystem()
 }
 
 function confirmDeleteLogs() {

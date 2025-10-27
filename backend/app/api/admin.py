@@ -82,20 +82,32 @@ async def shutdown_system(request: Request):
 
     try:
         logger.warning("System shutdown initiated via API")
-        # Use subprocess to run shutdown command
-        # For Windows: shutdown /s /t 0
-        # For Linux: shutdown -h now
-        import platform
-
-        if platform.system() == "Windows":
-            subprocess.run(["shutdown", "/s", "/t", "0"], check=True)
-        else:
-            subprocess.run(["shutdown", "-h", "now"], check=True)
+        # Linux shutdown command
+        subprocess.run(["sudo", "shutdown", "-h", "now"], check=True)
 
         return {"success": True, "message": "System shutdown initiated"}
     except Exception as e:
         logger.error(f"Failed to shutdown system: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to shutdown: {str(e)}")
+
+
+@router.post("/restart")
+async def restart_system(request: Request):
+    """Restart the system (use with caution!)"""
+    import subprocess
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        logger.warning("System restart initiated via API")
+        # Linux restart command
+        subprocess.run(["sudo", "reboot"], check=True)
+
+        return {"success": True, "message": "System restart initiated"}
+    except Exception as e:
+        logger.error(f"Failed to restart system: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to restart: {str(e)}")
 
 
 @router.get("/audio/check")

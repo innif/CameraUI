@@ -97,6 +97,21 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
+  async function restartSystem() {
+    try {
+      loading.value = true
+      error.value = null
+      const response = await api.admin.restart()
+      return response.data
+    } catch (err) {
+      error.value = err.message
+      console.error('Failed to restart:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function checkAudio() {
     try {
       loading.value = true
@@ -160,6 +175,7 @@ export const useAdminStore = defineStore('admin', () => {
     reloadCamera,
     setLogoVisibility,
     shutdownSystem,
+    restartSystem,
     checkAudio,
     fetchLogs,
     deleteLogs
