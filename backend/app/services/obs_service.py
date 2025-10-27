@@ -309,7 +309,7 @@ class OBSService:
             def on_input_volume_meters(data):
                 """Callback to collect audio volume data"""
                 for source in data.inputs:
-                    if source.get("inputName") == "Camera":
+                    if source.get("inputName") == "Mic":
                         try:
                             val = source.get("inputLevelsMul")[0][0]
                         except:
