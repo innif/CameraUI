@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y \
     libgtk2.0-dev \
     pkg-config \
     python3-opencv \
+    systemd \
+    dbus \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
