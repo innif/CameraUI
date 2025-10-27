@@ -75,15 +75,15 @@
                     <p class="status-description mt-1">{{ recordingStore.recordingStatus }}</p>
                   </div>
                   <v-chip
-                    :color="recordingStore.isRecording ? 'error' : 'success'"
+                    :color="recordingStore.isRecording ? 'error' : (recordingStore.hasError ? 'warning' : 'success')"
                     size="large"
                     class="status-chip"
                     variant="flat"
                   >
                     <v-icon start size="20">
-                      {{ recordingStore.isRecording ? 'mdi-record-circle' : 'mdi-circle-outline' }}
+                      {{ recordingStore.isRecording ? 'mdi-record-circle' : (recordingStore.hasError ? 'mdi-alert-circle' : 'mdi-circle-outline') }}
                     </v-icon>
-                    {{ recordingStore.isRecording ? 'Aufnahme läuft' : 'Bereit' }}
+                    {{ recordingStore.isRecording ? 'Aufnahme läuft' : (recordingStore.hasError ? 'Fehler' : 'Bereit') }}
                   </v-chip>
                 </div>
 

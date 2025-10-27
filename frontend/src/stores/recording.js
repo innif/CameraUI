@@ -15,8 +15,13 @@ export const useRecordingStore = defineStore('recording', () => {
   // Computed
   const recordingStatus = computed(() => {
     if (!isConnected.value) return 'Nicht verbunden'
+    if (error.value) return 'Fehler'
     if (isRecording.value) return 'Aufnahme läuft'
     return 'Bereit'
+  })
+
+  const hasError = computed(() => {
+    return !isConnected.value || error.value !== null
   })
 
   // Actions
@@ -143,6 +148,7 @@ export const useRecordingStore = defineStore('recording', () => {
     nextScheduledRecording,
     // Computed
     recordingStatus,
+    hasError,
     // Actions
     fetchStatus,
     startRecording,
