@@ -122,17 +122,17 @@
             <v-card-text :class="isMobile ? 'pa-3' : ''">
               <h3 v-if="!isMobile" class="text-h6 mb-4">Endzeit festlegen</h3>
 
-              <div v-if="videosStore.selectedVideo" class="d-flex gap-2" :class="isMobile ? 'mb-2' : 'mb-4'">
-                <!-- Time Chip -->
-                <v-chip color="primary" :size="isMobile ? 'default' : 'large'">
-                  <v-icon start>mdi-clock</v-icon>
-                  {{ formatTimeAsClock(endTime, videosStore.selectedVideo) }}
-                </v-chip>
-
+              <div v-if="videosStore.selectedVideo" class="chip-container" :class="isMobile ? 'mb-2' : 'mb-4'">
                 <!-- Duration Chip -->
-                <v-chip color="success" :size="isMobile ? 'default' : 'large'">
+                <v-chip color="success" :size="isMobile ? 'default' : 'large'" class="chip-item">
                   <v-icon start>mdi-timer</v-icon>
                   Dauer: {{ formatDuration(endTime - startTime) }}
+                </v-chip>
+
+                <!-- Time Chip -->
+                <v-chip color="primary" :size="isMobile ? 'default' : 'large'" class="chip-item">
+                  <v-icon start>mdi-clock</v-icon>
+                  {{ formatTimeAsClock(endTime, videosStore.selectedVideo) }}
                 </v-chip>
               </div>
 
@@ -428,6 +428,29 @@ onMounted(async () => {
   .weiter-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(var(--v-theme-primary), 0.5) !important;
+  }
+}
+
+/* Chip container with responsive wrapping */
+.chip-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-item {
+  flex: 0 0 auto;
+}
+
+/* On very small screens, stack chips vertically */
+@media (max-width: 599px) {
+  .chip-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chip-item {
+    width: 100%;
   }
 }
 </style>
