@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi.responses import FileResponse
 from typing import Optional, List
 from datetime import time
 import os
@@ -218,6 +219,33 @@ async def export_video_subclip(video_id: str, request: Request):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/videos/{video_id}/download")
+async def download_video(video_id: str, request: Request):
+    """Download a video file with streaming support"""
+    file_service = request.app.state.file_service
+    video = file_service.get_file(video_id)
+
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    video_path = file_service.get_video_path(video_id)
+
+    if not os.path.exists(video_path):
+        raise HTTPException(status_code=404, detail="Video file not found on disk")
+
+    # Use FileResponse for efficient streaming of large files
+    # This automatically handles Range requests for resumable downloads
+    return FileResponse(
+        path=video_path,
+        media_type="video/mp4",
+        filename=video_id,
+        headers={
+            "Accept-Ranges": "bytes",
+            "Cache-Control": "no-cache"
+        }
+    )
 
 
 @router.delete("/videos/{video_id}")

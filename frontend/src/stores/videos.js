@@ -118,20 +118,24 @@ export const useVideosStore = defineStore('videos', () => {
     }
   }
 
-  async function downloadVideo(filename) {
+  async function downloadVideo(filename, onProgress) {
     try {
-      const response = await api.videos.download(filename)
+      // Use streaming endpoint for large files to avoid memory issues
+      const baseURL = import.meta.env.VITE_API_BASE_URL || ''
+      const downloadUrl = `${baseURL}/api/recordings/videos/${filename}/download`
 
-      // Create blob and trigger download
-      const blob = new Blob([response.data])
-      const url = window.URL.createObjectURL(blob)
+      // Create a hidden link and trigger download
       const link = document.createElement('a')
-      link.href = url
+      link.href = downloadUrl
       link.download = filename
+      link.style.display = 'none'
       document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
+
+      // Clean up after a short delay
+      setTimeout(() => {
+        document.body.removeChild(link)
+      }, 100)
 
       return true
     } catch (err) {

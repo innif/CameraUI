@@ -189,15 +189,18 @@
                   :size="isMobile ? 'default' : 'large'"
                   :class="isMobile ? 'mt-2' : 'mt-4'"
                   @click="downloadFile"
+                  :disabled="downloading"
+                  :loading="downloading"
                 >
                   <v-icon start>mdi-download</v-icon>
-                  Video herunterladen
+                  {{ downloading ? 'Download wird gestartet...' : 'Video herunterladen' }}
                 </v-btn>
 
                 <v-alert type="info" :class="isMobile ? 'mt-2' : 'mt-4'" density="compact">
                   <small>
                     Hinweis: Stelle sicher, dass du mit dem WLAN verbunden bist.
                     Der Download kann je nach Dateigröße einige Zeit dauern.
+                    {{ downloading ? ' Der Download läuft im Hintergrund - bitte warte, bis der Browser den Download startet.' : '' }}
                   </small>
                 </v-alert>
               </div>
@@ -238,6 +241,8 @@ const step = ref(1)
 const selectedVideoId = ref(null)
 const startTime = ref(0)
 const endTime = ref(0)
+const downloading = ref(false)
+const downloadProgress = ref(0)
 
 const videoOptions = computed(() => {
   return videosStore.videosList
@@ -286,9 +291,14 @@ async function downloadFile() {
   if (!videosStore.exportedFile) return
 
   try {
+    downloading.value = true
+    downloadProgress.value = 0
     await videosStore.downloadVideo(videosStore.exportedFile.filename)
+    downloading.value = false
+    downloadProgress.value = 100
   } catch (err) {
     console.error('Download failed:', err)
+    downloading.value = false
   }
 }
 
@@ -297,6 +307,8 @@ function resetWizard() {
   selectedVideoId.value = null
   startTime.value = 0
   endTime.value = 0
+  downloading.value = false
+  downloadProgress.value = 0
   videosStore.clearExportedFile()
 }
 

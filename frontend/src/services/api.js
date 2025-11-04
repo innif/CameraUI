@@ -9,6 +9,15 @@ const api = axios.create({
   }
 })
 
+// Separate axios instance for large file downloads (no timeout)
+const downloadApi = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
+  timeout: 0, // No timeout for downloads
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
+
 // Request interceptor for error handling
 api.interceptors.response.use(
   response => response,
@@ -97,9 +106,10 @@ export default {
         end_time: endTime
       })
     },
-    download(filename) {
-      return api.get(`/videos/${filename}`, {
-        responseType: 'blob'
+    download(filename, onDownloadProgress) {
+      return downloadApi.get(`/videos/${filename}`, {
+        responseType: 'blob',
+        onDownloadProgress
       })
     },
     delete(id) {
