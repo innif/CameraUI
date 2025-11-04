@@ -240,7 +240,7 @@ async def download_video(video_id: str, request: Request):
     return FileResponse(
         path=video_path,
         media_type="video/mp4",
-        filename=video_id,
+        filename=f"{video_id}.mp4",
         headers={
             "Accept-Ranges": "bytes",
             "Cache-Control": "no-cache"
