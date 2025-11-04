@@ -442,8 +442,8 @@ onMounted(async () => {
   flex: 0 0 auto;
 }
 
-/* On very small screens, stack chips vertically */
-@media (max-width: 599px) {
+/* Only stack chips vertically on very small screens where they don't fit side by side */
+@media (max-width: 400px) {
   .chip-container {
     flex-direction: column;
     align-items: flex-start;
