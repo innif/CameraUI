@@ -25,13 +25,14 @@ export const useVideosStore = defineStore('videos', () => {
     if (!video || !video.start_time) return 'Unbekannt'
 
     const date = new Date(video.start_time)
+    const weekday = date.toLocaleDateString('de-DE', { weekday: 'long' })
     const dateStr = date.toLocaleDateString('de-DE')
     const timeStr = date.toLocaleTimeString('de-DE', {
       hour: '2-digit',
       minute: '2-digit'
     })
 
-    return `${dateStr} - ${timeStr} Uhr`
+    return `${weekday}, ${dateStr} - ${timeStr} Uhr`
   }
 
   function formatFileSize(bytes) {
