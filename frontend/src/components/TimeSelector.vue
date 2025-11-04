@@ -3,7 +3,7 @@
     <!-- Time Display -->
     <v-chip color="primary" :size="isMobile ? 'default' : 'large'" :class="isMobile ? 'mb-2' : 'mb-4'">
       <v-icon start>mdi-clock</v-icon>
-      {{ formatTime(modelValue) }}
+      {{ formatTimeAsClock(modelValue) }}
     </v-chip>
 
     <!-- Slider -->
@@ -18,7 +18,7 @@
       @update:model-value="updateValue"
     >
       <template #thumb-label="{ modelValue }">
-        {{ formatTime(modelValue) }}
+        {{ formatTimeAsClock(modelValue) }}
       </template>
     </v-slider>
 
@@ -167,15 +167,17 @@ function adjustTime(seconds) {
   emit('preview', newValue)
 }
 
-function formatTime(seconds) {
-  const hrs = Math.floor(seconds / 3600)
-  const mins = Math.floor((seconds % 3600) / 60)
-  const secs = Math.floor(seconds % 60)
+function formatTimeAsClock(seconds) {
+  // Get the video start time and add the offset
+  const videoStartTime = new Date(props.video.start_time)
+  const actualTime = new Date(videoStartTime.getTime() + seconds * 1000)
 
-  if (hrs > 0) {
-    return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
-  return `${mins}:${secs.toString().padStart(2, '0')}`
+  // Format as HH:MM:SS
+  const hrs = actualTime.getHours().toString().padStart(2, '0')
+  const mins = actualTime.getMinutes().toString().padStart(2, '0')
+  const secs = actualTime.getSeconds().toString().padStart(2, '0')
+
+  return `${hrs}:${mins}:${secs} Uhr`
 }
 </script>
 
