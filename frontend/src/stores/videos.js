@@ -120,9 +120,9 @@ export const useVideosStore = defineStore('videos', () => {
 
   async function downloadVideo(filename, onProgress) {
     try {
-      // Use streaming endpoint for large files to avoid memory issues
+      // Use direct link to static files for large files to avoid memory issues
       const baseURL = import.meta.env.VITE_API_BASE_URL || ''
-      const downloadUrl = `${baseURL}/api/recordings/videos/${filename}/download`
+      const downloadUrl = `${baseURL}/videos/${filename}`
 
       // Create a hidden link and trigger download
       const link = document.createElement('a')
