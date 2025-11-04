@@ -63,6 +63,13 @@ class Settings(BaseSettings):
     # Authentication
     WEB_PASSWORD: str = "deinSicheresPasswort123"
 
+    # SSH settings for system control (shutdown/reboot)
+    SSH_HOST: str = OBS_HOST  # Use same host as OBS
+    SSH_PORT: int = 22
+    SSH_USERNAME: str = "obsuser"
+    SSH_PASSWORD: str = "obsuser"
+    SSH_KEY_FILE: str = ""  # Path to SSH private key file (optional)
+
     class Config:
         env_file = ".env"
         case_sensitive = True

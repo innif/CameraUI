@@ -74,8 +74,8 @@ async def set_logo_visibility(logo_request: LogoRequest, request: Request):
 
 @router.post("/shutdown")
 async def shutdown_system(request: Request):
-    """Shutdown the system (use with caution!)"""
-    import subprocess
+    """Shutdown the system via SSH (use with caution!)"""
+    from app.core.ssh_client import SSHClient
     import logging
 
     logger = logging.getLogger(__name__)
@@ -83,10 +83,15 @@ async def shutdown_system(request: Request):
     try:
         logger.warning("System shutdown initiated via API")
 
-        # Use sudo shutdown command
-        subprocess.run(["sudo", "shutdown", "-h", "now"], check=True)
+        # Use SSH to execute shutdown command
+        ssh_client = SSHClient()
+        success, message = ssh_client.shutdown()
 
-        return {"success": True, "message": "System shutdown initiated"}
+        if success:
+            return {"success": True, "message": message}
+        else:
+            raise HTTPException(status_code=500, detail=message)
+
     except Exception as e:
         logger.error(f"Failed to shutdown system: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to shutdown: {str(e)}")
@@ -94,8 +99,8 @@ async def shutdown_system(request: Request):
 
 @router.post("/restart")
 async def restart_system(request: Request):
-    """Restart the system (use with caution!)"""
-    import subprocess
+    """Restart the system via SSH (use with caution!)"""
+    from app.core.ssh_client import SSHClient
     import logging
 
     logger = logging.getLogger(__name__)
@@ -103,10 +108,15 @@ async def restart_system(request: Request):
     try:
         logger.warning("System restart initiated via API")
 
-        # Use sudo reboot command
-        subprocess.run(["sudo", "reboot"], check=True)
+        # Use SSH to execute reboot command
+        ssh_client = SSHClient()
+        success, message = ssh_client.reboot()
 
-        return {"success": True, "message": "System restart initiated"}
+        if success:
+            return {"success": True, "message": message}
+        else:
+            raise HTTPException(status_code=500, detail=message)
+
     except Exception as e:
         logger.error(f"Failed to restart system: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to restart: {str(e)}")
