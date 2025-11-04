@@ -245,28 +245,65 @@ sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.ta
 
 ## System-Steuerung (Shutdown & Restart)
 
-Die CameraUI-Web-Oberfläche bietet Buttons zum Herunterfahren und Neustarten des Servers. Da die Anwendung in Docker läuft, sind spezielle Berechtigungen erforderlich.
+Die CameraUI-Web-Oberfläche bietet Buttons zum Herunterfahren und Neustarten des Servers. Die Anwendung nutzt SSH, um sich mit dem Host-System zu verbinden und die Befehle auszuführen.
 
-### Sudo-Berechtigungen einrichten
+### SSH-Berechtigungen einrichten
 
-Erstellen Sie eine sudoers-Datei für Docker-Container:
+Der `obsuser` muss Shutdown- und Reboot-Befehle ohne Passwortabfrage ausführen können. Bearbeiten Sie die sudoers-Datei:
 
 ```bash
-sudo visudo -f /etc/sudoers.d/docker-shutdown
+sudo visudo
 ```
 
-Fügen Sie folgende Zeilen ein:
+Fügen Sie am Ende der Datei folgende Zeilen ein:
 
 ```
-root ALL=(ALL) NOPASSWD: /sbin/shutdown
-root ALL=(ALL) NOPASSWD: /sbin/reboot
+# Allow obsuser to execute shutdown/reboot without password
+obsuser ALL=(ALL) NOPASSWD: /sbin/shutdown
+obsuser ALL=(ALL) NOPASSWD: /sbin/reboot
+```
+
+**Alternative:** Falls Sie dem `obsuser` vollständigen sudo-Zugriff ohne Passwort geben möchten:
+
+```
+obsuser ALL=(ALL) NOPASSWD: ALL
 ```
 
 Speichern und schließen Sie die Datei (Ctrl+X, dann Y, dann Enter).
 
+### SSH-Konfiguration in .env
+
+Die SSH-Verbindungsparameter werden über die `.env`-Datei konfiguriert. Standardwerte sind:
+
+```env
+# SSH settings for system control (shutdown/reboot)
+SSH_HOST=localhost          # Wird automatisch auf OBS_HOST gesetzt
+SSH_PORT=22
+SSH_USERNAME=obsuser
+SSH_PASSWORD=obsuser
+SSH_KEY_FILE=               # Optional: Pfad zu SSH-Schlüsseldatei
+```
+
+**Wichtig:** Der `SSH_HOST` verwendet automatisch den Wert von `OBS_HOST`, sodass das Backend sich mit demselben Host verbindet, auf dem OBS läuft.
+
+### SSH-Server auf dem Host
+
+Stellen Sie sicher, dass der SSH-Server auf dem Host läuft:
+
+```bash
+sudo systemctl status ssh
+```
+
+Falls nicht installiert:
+
+```bash
+sudo apt install openssh-server
+sudo systemctl enable --now ssh
+```
+
 ### Docker-Container neu starten
 
-Nach der Einrichtung der sudoers-Datei müssen die Container neu gebaut werden:
+Nach der Einrichtung müssen die Container neu gebaut werden:
 
 ```bash
 cd ~/CameraUI
@@ -281,7 +318,7 @@ sudo docker compose up -d --build
 3. Klicken Sie auf "Neustart" oder "Herunterfahren"
 4. Bestätigen Sie die Aktion im Dialog
 
-Der Server sollte sich nun entsprechend neu starten oder herunterfahren.
+Die Anwendung verbindet sich per SSH mit dem Host und führt die entsprechenden Befehle aus.
 
 ### Fehlerbehebung
 
@@ -292,9 +329,36 @@ sudo docker compose logs backend --tail 50
 ```
 
 Stellen Sie sicher, dass:
-- Die sudoers-Datei korrekt erstellt wurde: `sudo cat /etc/sudoers.d/docker-shutdown`
-- Der Container im privileged-Modus läuft (in `docker-compose.yml` konfiguriert)
-- Die sudoers-Datei im Container gemountet ist
+- Der SSH-Server auf dem Host läuft: `sudo systemctl status ssh`
+- Die sudoers-Einstellungen korrekt sind: `sudo cat /etc/sudoers` (ganz am Ende prüfen)
+- Der `obsuser` existiert und das richtige Passwort hat
+- Die SSH-Verbindung funktioniert (Test vom Container aus):
+  ```bash
+  sudo docker exec -it cameraui-backend-1 bash
+  apt update && apt install -y openssh-client
+  ssh obsuser@host.docker.internal "sudo shutdown --help"
+  ```
+- Falls `host.docker.internal` nicht funktioniert, verwenden Sie die IP-Adresse des Hosts
+
+### SSH-Schlüssel verwenden (Optional)
+
+Für erhöhte Sicherheit können Sie SSH-Schlüssel statt Passwörtern verwenden:
+
+1. **SSH-Schlüssel generieren (auf dem Host):**
+   ```bash
+   ssh-keygen -t ed25519 -f ~/.ssh/cameraui_key -N ""
+   ```
+
+2. **Public Key zum authorized_keys hinzufügen:**
+   ```bash
+   cat ~/.ssh/cameraui_key.pub >> /home/obsuser/.ssh/authorized_keys
+   chmod 600 /home/obsuser/.ssh/authorized_keys
+   ```
+
+3. **Private Key in CameraUI einbinden:**
+   - Kopieren Sie den privaten Schlüssel in das CameraUI-Verzeichnis
+   - Setzen Sie `SSH_KEY_FILE=/path/to/cameraui_key` in der `.env`
+   - Leeren Sie `SSH_PASSWORD=` in der `.env`
 
 ---
 
