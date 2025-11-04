@@ -6,6 +6,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: scheinicam-backend
+    privileged: true
     ports:
       - "8007:8000"
     volumes:
@@ -13,9 +14,8 @@ services:
       - ./backend/videos:/app/videos
       - ./backend/logs:/app/logs
       - ./backend/assets:/app/assets
-      # Systemd socket for shutdown/reboot capabilities
-      - /run/systemd/system:/run/systemd/system:ro
-      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro
+      # Sudoers file for shutdown/reboot capabilities
+      - /etc/sudoers.d/docker-shutdown:/etc/sudoers.d/docker-shutdown:ro
     env_file:
       - .env
     environment:
@@ -24,8 +24,6 @@ services:
       - OBS_HOST=${OBS_HOST:-host.docker.internal}
       - OBS_PORT=${OBS_PORT:-4455}
       - OBS_PASSWORD=${OBS_PASSWORD}
-      # D-Bus settings for systemctl
-      - DBUS_SYSTEM_BUS_ADDRESS=unix:path=/var/run/dbus/system_bus_socket
     restart: unless-stopped
     # Für Linux: Wenn OBS auf dem Host läuft, extra_hosts hinzufügen
     extra_hosts:

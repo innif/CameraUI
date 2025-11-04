@@ -77,21 +77,14 @@ async def shutdown_system(request: Request):
     """Shutdown the system (use with caution!)"""
     import subprocess
     import logging
-    import os
 
     logger = logging.getLogger(__name__)
 
     try:
         logger.warning("System shutdown initiated via API")
 
-        # Check if running in Docker and use systemctl via host if available
-        # Otherwise use sudo shutdown
-        if os.path.exists("/run/systemd/system"):
-            # Use systemctl (works when systemd socket is mounted)
-            subprocess.run(["systemctl", "poweroff"], check=True)
-        else:
-            # Fallback to sudo shutdown
-            subprocess.run(["sudo", "shutdown", "-h", "now"], check=True)
+        # Use sudo shutdown command
+        subprocess.run(["sudo", "shutdown", "-h", "now"], check=True)
 
         return {"success": True, "message": "System shutdown initiated"}
     except Exception as e:
@@ -104,21 +97,14 @@ async def restart_system(request: Request):
     """Restart the system (use with caution!)"""
     import subprocess
     import logging
-    import os
 
     logger = logging.getLogger(__name__)
 
     try:
         logger.warning("System restart initiated via API")
 
-        # Check if running in Docker and use systemctl via host if available
-        # Otherwise use sudo reboot
-        if os.path.exists("/run/systemd/system"):
-            # Use systemctl (works when systemd socket is mounted)
-            subprocess.run(["systemctl", "reboot"], check=True)
-        else:
-            # Fallback to sudo reboot
-            subprocess.run(["sudo", "reboot"], check=True)
+        # Use sudo reboot command
+        subprocess.run(["sudo", "reboot"], check=True)
 
         return {"success": True, "message": "System restart initiated"}
     except Exception as e:
