@@ -25,7 +25,7 @@
     <!-- Quick Navigation Buttons -->
     <v-row :class="isMobile ? 'mb-2 time-nav-buttons-mobile' : 'mb-4'" dense>
       <!-- Button -1 Min -->
-      <v-col cols="6" sm="3" order="1">
+      <v-col cols="6" sm="3" class="nav-btn-1">
         <v-btn
           block
           variant="outlined"
@@ -40,7 +40,7 @@
       </v-col>
 
       <!-- Button -10s -->
-      <v-col cols="6" sm="3" order="2">
+      <v-col cols="6" sm="3" class="nav-btn-2">
         <v-btn
           block
           variant="outlined"
@@ -55,7 +55,7 @@
       </v-col>
 
       <!-- Button +10s -->
-      <v-col cols="6" sm="3" order="3" order-xs="4">
+      <v-col cols="6" sm="3" class="nav-btn-3">
         <v-btn
           block
           variant="outlined"
@@ -70,7 +70,7 @@
       </v-col>
 
       <!-- Button +1 Min -->
-      <v-col cols="6" sm="3" order="4" order-xs="3">
+      <v-col cols="6" sm="3" class="nav-btn-4">
         <v-btn
           block
           variant="outlined"
@@ -221,6 +221,25 @@ function formatTimeShort(seconds) {
   .time-nav-buttons-mobile {
     margin-left: -4px;
     margin-right: -4px;
+  }
+
+  /* Responsive button order for mobile (2 rows):
+     Row 1: -1m | +1m
+     Row 2: -10s | +10s */
+  .nav-btn-1 {
+    order: 1; /* -1m: top left */
+  }
+
+  .nav-btn-2 {
+    order: 3; /* -10s: bottom left */
+  }
+
+  .nav-btn-3 {
+    order: 4; /* +10s: bottom right */
+  }
+
+  .nav-btn-4 {
+    order: 2; /* +1m: top right */
   }
 }
 
