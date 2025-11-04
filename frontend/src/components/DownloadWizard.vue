@@ -122,6 +122,12 @@
             <v-card-text :class="isMobile ? 'pa-3' : ''">
               <h3 v-if="!isMobile" class="text-h6 mb-4">Endzeit festlegen</h3>
 
+              <!-- Duration Chip -->
+              <v-chip color="success" :size="isMobile ? 'default' : 'large'" :class="isMobile ? 'mb-2' : 'mb-4'">
+                <v-icon start>mdi-timer</v-icon>
+                Dauer: {{ formatDuration(endTime - startTime) }}
+              </v-chip>
+
               <TimeSelector
                 v-if="videosStore.selectedVideo"
                 v-model="endTime"
