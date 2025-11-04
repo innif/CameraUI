@@ -380,9 +380,9 @@ class RecordingScheduler:
                 deleted_count = await self.file_service.delete_old_files(settings.delete_age)
                 logger.info(f"Cleanup: Deleted {deleted_count} old video files")
 
-            # Delete subclips
-            subclip_count = await self.file_service.delete_subclips()
-            logger.info(f"Cleanup: Deleted {subclip_count} subclip files")
+            # Delete subclips (older than configured minimum age)
+            subclip_count = await self.file_service.delete_subclips(settings.subclip_min_age)
+            logger.info(f"Cleanup: Deleted {subclip_count} subclip files (older than {settings.subclip_min_age})")
 
             # Delete old log files (keep logs for the same duration as videos)
             if settings.delete_age:

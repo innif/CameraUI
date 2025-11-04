@@ -26,14 +26,15 @@ class FileService:
         """Initialize file service"""
         if self._initialized:
             return
-        
+
         await self.scan_files()
-        
+
         if delete_age:
             await self.delete_old_files(delete_age)
-        
-        await self.delete_subclips()
-        
+
+        # On initialization, delete subclips older than 1 day (likely from previous session)
+        await self.delete_subclips(min_age=timedelta(days=1))
+
         self._initialized = True
         logger.info("File service initialized")
     
@@ -145,22 +146,53 @@ class FileService:
         logger.info(f"Deleted {deleted_count} old video files")
         return deleted_count
     
-    async def delete_subclips(self) -> int:
-        """Delete all subclip files"""
+    async def delete_subclips(self, min_age: Optional[timedelta] = None) -> int:
+        """
+        Delete subclip files older than specified age
+
+        Args:
+            min_age: Minimum age for deletion. If None, defaults to 2 hours.
+                     This prevents deletion of files that are currently being downloaded.
+
+        Returns:
+            Number of deleted files
+        """
+        if min_age is None:
+            min_age = timedelta(hours=2)
+
         deleted_count = 0
-        
+        now = datetime.now(timezone.utc)
+
         try:
             for filename in os.listdir(self.video_directory):
-                if filename.startswith("subclip_"):
+                # Match both old naming (subclip_) and new naming (Scheinbar_)
+                if filename.startswith("subclip_") or filename.startswith("Scheinbar_"):
+                    # Skip files that don't end with .mp4 to avoid processing temp files
+                    if not filename.endswith(".mp4"):
+                        continue
+
                     filepath = os.path.join(self.video_directory, filename)
-                    os.remove(filepath)
-                    deleted_count += 1
-                    logger.info(f"Deleted subclip: {filename}")
-        
+
+                    # Check file age
+                    try:
+                        file_mtime = datetime.fromtimestamp(os.path.getmtime(filepath), tz=timezone.utc)
+                        file_age = now - file_mtime
+
+                        # Only delete if file is older than min_age
+                        if file_age >= min_age:
+                            os.remove(filepath)
+                            deleted_count += 1
+                            logger.info(f"Deleted subclip (age: {file_age}): {filename}")
+                        else:
+                            logger.debug(f"Skipping recent subclip (age: {file_age}): {filename}")
+
+                    except Exception as e:
+                        logger.error(f"Error processing subclip {filename}: {e}")
+
         except Exception as e:
             logger.exception(e)
             logger.error("Error deleting subclips")
-        
+
         return deleted_count
     
     async def export_subclip(

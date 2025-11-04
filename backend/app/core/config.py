@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     # File management
     DELETE_AGE_SECONDS: float = 1209600.0  # 14 days
     CLEANUP_INTERVAL_SECONDS: int = 3600  # 1 hour
+    SUBCLIP_MIN_AGE_SECONDS: float = 7200.0  # 2 hours - minimum age before subclips are deleted
     VIDEO_DIRECTORY: str = "videos"
     ASSETS_DIRECTORY: str = "assets"
     LOGS_DIRECTORY: str = "logs"
@@ -75,6 +76,11 @@ class Settings(BaseSettings):
     def cleanup_interval(self) -> int:
         """Get cleanup interval in seconds"""
         return self.CLEANUP_INTERVAL_SECONDS
+
+    @property
+    def subclip_min_age(self) -> timedelta:
+        """Get minimum subclip age as timedelta"""
+        return timedelta(seconds=self.SUBCLIP_MIN_AGE_SECONDS)
 
 
 # Global settings instance
