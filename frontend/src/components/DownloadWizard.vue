@@ -122,11 +122,19 @@
             <v-card-text :class="isMobile ? 'pa-3' : ''">
               <h3 v-if="!isMobile" class="text-h6 mb-4">Endzeit festlegen</h3>
 
-              <!-- Duration Chip -->
-              <v-chip color="success" :size="isMobile ? 'default' : 'large'" :class="isMobile ? 'mb-2' : 'mb-4'">
-                <v-icon start>mdi-timer</v-icon>
-                Dauer: {{ formatDuration(endTime - startTime) }}
-              </v-chip>
+              <div v-if="videosStore.selectedVideo" class="d-flex gap-2" :class="isMobile ? 'mb-2' : 'mb-4'">
+                <!-- Time Chip -->
+                <v-chip color="primary" :size="isMobile ? 'default' : 'large'">
+                  <v-icon start>mdi-clock</v-icon>
+                  {{ formatTimeAsClock(endTime, videosStore.selectedVideo) }}
+                </v-chip>
+
+                <!-- Duration Chip -->
+                <v-chip color="success" :size="isMobile ? 'default' : 'large'">
+                  <v-icon start>mdi-timer</v-icon>
+                  Dauer: {{ formatDuration(endTime - startTime) }}
+                </v-chip>
+              </div>
 
               <TimeSelector
                 v-if="videosStore.selectedVideo"
@@ -134,6 +142,7 @@
                 :video="videosStore.selectedVideo"
                 :min-time="startTime"
                 @preview="updatePreview"
+                :hide-time-chip="true"
               />
             </v-card-text>
             <v-card-actions :class="isMobile ? 'pa-2' : ''">
@@ -367,6 +376,19 @@ function formatDuration(seconds) {
   const mins = Math.floor(seconds / 60)
   const secs = Math.floor(seconds % 60)
   return `${mins}:${secs.toString().padStart(2, '0')} Min`
+}
+
+function formatTimeAsClock(seconds, video) {
+  // Get the video start time and add the offset
+  const videoStartTime = new Date(video.start_time)
+  const actualTime = new Date(videoStartTime.getTime() + seconds * 1000)
+
+  // Format as HH:MM:SS
+  const hrs = actualTime.getHours().toString().padStart(2, '0')
+  const mins = actualTime.getMinutes().toString().padStart(2, '0')
+  const secs = actualTime.getSeconds().toString().padStart(2, '0')
+
+  return `${hrs}:${mins}:${secs} Uhr`
 }
 
 // Watch for changes to startTime and update endTime accordingly

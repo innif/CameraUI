@@ -1,7 +1,7 @@
 <template>
   <div class="time-selector">
     <!-- Time Display -->
-    <v-chip color="primary" :size="isMobile ? 'default' : 'large'" :class="isMobile ? 'mb-2' : 'mb-4'">
+    <v-chip v-if="!hideTimeChip" color="primary" :size="isMobile ? 'default' : 'large'" :class="isMobile ? 'mb-2' : 'mb-4'">
       <v-icon start>mdi-clock</v-icon>
       {{ formatTimeAsClock(modelValue) }}
     </v-chip>
@@ -117,6 +117,10 @@ const props = defineProps({
   minTime: {
     type: Number,
     default: 0
+  },
+  hideTimeChip: {
+    type: Boolean,
+    default: false
   }
 })
 
