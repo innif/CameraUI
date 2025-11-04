@@ -23,13 +23,13 @@ class SSHClient:
         Initialize SSH client with connection parameters
 
         Args:
-            host: SSH host (defaults to settings.SSH_HOST)
+            host: SSH host (defaults to settings.ssh_host, which uses OBS_HOST if SSH_HOST is empty)
             port: SSH port (defaults to settings.SSH_PORT)
             username: SSH username (defaults to settings.SSH_USERNAME)
             password: SSH password (defaults to settings.SSH_PASSWORD)
             key_file: Path to SSH private key file (defaults to settings.SSH_KEY_FILE)
         """
-        self.host = host or settings.SSH_HOST
+        self.host = host or settings.ssh_host
         self.port = port or settings.SSH_PORT
         self.username = username or settings.SSH_USERNAME
         self.password = password or settings.SSH_PASSWORD

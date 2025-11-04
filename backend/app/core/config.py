@@ -64,11 +64,16 @@ class Settings(BaseSettings):
     WEB_PASSWORD: str = "deinSicheresPasswort123"
 
     # SSH settings for system control (shutdown/reboot)
-    SSH_HOST: str = OBS_HOST  # Use same host as OBS
+    SSH_HOST: str = ""  # Defaults to OBS_HOST if empty
     SSH_PORT: int = 22
     SSH_USERNAME: str = "obsuser"
     SSH_PASSWORD: str = "obsuser"
     SSH_KEY_FILE: str = ""  # Path to SSH private key file (optional)
+
+    @property
+    def ssh_host(self) -> str:
+        """Get SSH host, defaulting to OBS_HOST if not set"""
+        return self.SSH_HOST if self.SSH_HOST else self.OBS_HOST
 
     class Config:
         env_file = ".env"
