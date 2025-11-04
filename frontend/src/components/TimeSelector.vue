@@ -18,7 +18,7 @@
       @update:model-value="updateValue"
     >
       <template #thumb-label="{ modelValue }">
-        {{ formatTimeAsClock(modelValue) }}
+        {{ formatTimeShort(modelValue) }}
       </template>
     </v-slider>
 
@@ -178,6 +178,18 @@ function formatTimeAsClock(seconds) {
   const secs = actualTime.getSeconds().toString().padStart(2, '0')
 
   return `${hrs}:${mins}:${secs} Uhr`
+}
+
+function formatTimeShort(seconds) {
+  // Get the video start time and add the offset
+  const videoStartTime = new Date(props.video.start_time)
+  const actualTime = new Date(videoStartTime.getTime() + seconds * 1000)
+
+  // Format as HH:MM (shorter for slider thumb)
+  const hrs = actualTime.getHours().toString().padStart(2, '0')
+  const mins = actualTime.getMinutes().toString().padStart(2, '0')
+
+  return `${hrs}:${mins}`
 }
 </script>
 
