@@ -58,6 +58,15 @@
               </v-alert>
             </v-card-text>
             <v-card-actions :class="isMobile ? 'pa-2' : ''">
+              <v-btn
+                variant="text"
+                :disabled="!selectedVideoId"
+                @click="downloadFullShow"
+                :size="isMobile ? 'small' : 'default'"
+              >
+                <v-icon start>mdi-download</v-icon>
+                Ganze Show herunterladen
+              </v-btn>
               <v-spacer></v-spacer>
               <v-btn
                 color="primary"
@@ -265,6 +274,24 @@ async function selectVideo() {
     await updatePreview(startTime.value)
 
     step.value = 2
+  }
+}
+
+async function downloadFullShow() {
+  if (!selectedVideoId.value) return
+
+  try {
+    downloading.value = true
+    await videosStore.selectVideo(selectedVideoId.value)
+
+    if (videosStore.selectedVideo && videosStore.selectedVideo.filename) {
+      // Download the original file directly without exporting
+      await videosStore.downloadVideo(videosStore.selectedVideo.filename)
+    }
+  } catch (err) {
+    console.error('Download failed:', err)
+  } finally {
+    downloading.value = false
   }
 }
 
