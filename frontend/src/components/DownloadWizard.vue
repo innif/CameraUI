@@ -282,12 +282,24 @@ async function downloadFullShow() {
 
   try {
     downloading.value = true
-    await videosStore.selectVideo(selectedVideoId.value)
 
-    if (videosStore.selectedVideo && videosStore.selectedVideo.filename) {
-      // Download the original file directly without exporting
-      await videosStore.downloadVideo(videosStore.selectedVideo.filename)
-    }
+    // Use the video ID directly to download the original file
+    // The backend endpoint is: GET /api/recordings/videos/{video_id}/download
+    const baseURL = import.meta.env.VITE_API_BASE_URL || ''
+    const downloadUrl = `${baseURL}/api/recordings/videos/${selectedVideoId.value}/download`
+
+    // Create a hidden link and trigger download
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = `${selectedVideoId.value}.mp4`
+    link.style.display = 'none'
+    document.body.appendChild(link)
+    link.click()
+
+    // Clean up after a short delay
+    setTimeout(() => {
+      document.body.removeChild(link)
+    }, 100)
   } catch (err) {
     console.error('Download failed:', err)
   } finally {
