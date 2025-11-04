@@ -237,7 +237,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useVideosStore } from '@/stores/videos'
 import TimeSelector from '@/components/TimeSelector.vue'
@@ -267,8 +267,14 @@ async function selectVideo() {
     // Use the actual duration from video file (backend calculates it even for recording videos)
     const duration = videosStore.selectedVideo.duration
     startTime.value = 0
-    // Set endTime to duration if available, otherwise use a safe default
-    endTime.value = duration && duration > 0 ? duration : 3600
+
+    // Set endTime to start + 8 minutes (480 seconds), but not exceeding the video duration
+    const eightMinutes = 480
+    if (duration && duration > 0) {
+      endTime.value = Math.min(eightMinutes, duration)
+    } else {
+      endTime.value = eightMinutes
+    }
 
     // Load initial preview at start time
     await updatePreview(startTime.value)
@@ -357,8 +363,29 @@ function formatDuration(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')} Min`
 }
 
+// Watch for changes to startTime and update endTime accordingly
+watch(startTime, (newStartTime) => {
+  if (videosStore.selectedVideo) {
+    const duration = videosStore.selectedVideo.duration
+    const eightMinutes = 480
+    const proposedEndTime = newStartTime + eightMinutes
+
+    // Only update endTime if it would still be valid
+    if (duration && duration > 0) {
+      endTime.value = Math.min(proposedEndTime, duration)
+    } else {
+      endTime.value = proposedEndTime
+    }
+  }
+})
+
 onMounted(async () => {
   await videosStore.fetchVideos()
+
+  // Automatically select the newest recording
+  if (videoOptions.value.length > 0) {
+    selectedVideoId.value = videoOptions.value[0].id
+  }
 })
 </script>
 
