@@ -160,6 +160,33 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
+  async function downloadLog(filename) {
+    try {
+      loading.value = true
+      error.value = null
+      const response = await api.admin.downloadLogFile(filename)
+
+      // Create a blob URL and trigger download
+      const blob = new Blob([response.data], { type: 'text/plain' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      return { success: true }
+    } catch (err) {
+      error.value = err.message
+      console.error('Failed to download log:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     // State
     isMuted,
@@ -178,6 +205,7 @@ export const useAdminStore = defineStore('admin', () => {
     restartSystem,
     checkAudio,
     fetchLogs,
-    deleteLogs
+    deleteLogs,
+    downloadLog
   }
 })

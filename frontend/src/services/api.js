@@ -82,6 +82,11 @@ export default {
     getLogFile(filename) {
       return api.get(`/api/admin/logs/${filename}`)
     },
+    downloadLogFile(filename) {
+      return api.get(`/api/admin/logs/${filename}/download`, {
+        responseType: 'blob'
+      })
+    },
     deleteLogs() {
       return api.delete('/api/admin/logs')
     }

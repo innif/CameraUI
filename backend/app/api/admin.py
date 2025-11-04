@@ -200,6 +200,40 @@ async def get_log_file(filename: str, request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/logs/{filename}/download")
+async def download_log_file(filename: str, request: Request):
+    """Download a specific log file"""
+    from pathlib import Path
+    from fastapi.responses import FileResponse
+
+    # Security: Prevent directory traversal
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    log_dir = Path("logs")
+    log_path = log_dir / filename
+
+    # Check if file exists and is in the logs directory
+    if not log_path.exists() or not log_path.is_file():
+        raise HTTPException(status_code=404, detail="Log file not found")
+
+    # Verify the file is actually in the logs directory (security check)
+    if not str(log_path.resolve()).startswith(str(log_dir.resolve())):
+        raise HTTPException(status_code=400, detail="Invalid log file path")
+
+    try:
+        return FileResponse(
+            path=log_path,
+            filename=filename,
+            media_type='text/plain',
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.delete("/logs")
 async def delete_all_logs(request: Request):
     """Delete all log files"""

@@ -268,6 +268,17 @@
                 <v-list-item-subtitle>
                   {{ formatFileSize(log.size) }} - {{ formatDate(log.modified) }}
                 </v-list-item-subtitle>
+                <template #append>
+                  <v-btn
+                    icon
+                    size="small"
+                    color="primary"
+                    :loading="adminStore.loading"
+                    @click="downloadLog(log.filename)"
+                  >
+                    <v-icon>mdi-download</v-icon>
+                  </v-btn>
+                </template>
               </v-list-item>
             </v-list>
             <v-alert v-else type="info">
@@ -390,6 +401,10 @@ function confirmDeleteLogs() {
 async function deleteLogs() {
   showDeleteLogsDialog.value = false
   await adminStore.deleteLogs()
+}
+
+async function downloadLog(filename) {
+  await adminStore.downloadLog(filename)
 }
 
 async function deleteVideo(videoId) {
