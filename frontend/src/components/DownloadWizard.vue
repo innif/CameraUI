@@ -7,6 +7,7 @@
           :value="1"
           :title="isMobile ? 'Wählen' : 'Aufnahme wählen'"
           icon="mdi-calendar"
+          color="primary"
         ></v-stepper-item>
 
         <v-divider></v-divider>
@@ -16,6 +17,7 @@
           :value="2"
           :title="isMobile ? 'Start' : 'Startzeit'"
           icon="mdi-clock-start"
+          color="primary"
         ></v-stepper-item>
 
         <v-divider></v-divider>
@@ -25,6 +27,7 @@
           :value="3"
           :title="isMobile ? 'Ende' : 'Endzeit'"
           icon="mdi-clock-end"
+          color="primary"
         ></v-stepper-item>
 
         <v-divider></v-divider>
@@ -33,6 +36,7 @@
           :value="4"
           title="Download"
           icon="mdi-download"
+          color="primary"
         ></v-stepper-item>
       </v-stepper-header>
 
@@ -87,7 +91,7 @@
         <v-stepper-window-item :value="2">
           <v-card>
             <v-card-text :class="isMobile ? 'pa-3' : ''">
-              <h3 v-if="!isMobile" class="text-h6 mb-4">Startzeit festlegen</h3>
+              <h3 class="text-h6 mb-4">Startzeit festlegen</h3>
 
               <TimeSelector
                 v-if="videosStore.selectedVideo"
@@ -120,7 +124,7 @@
         <v-stepper-window-item :value="3">
           <v-card>
             <v-card-text :class="isMobile ? 'pa-3' : ''">
-              <h3 v-if="!isMobile" class="text-h6 mb-4">Endzeit festlegen</h3>
+              <h3 class="text-h6 mb-4">Endzeit festlegen</h3>
 
               <div v-if="videosStore.selectedVideo" class="chip-container" :class="isMobile ? 'mb-2' : 'mb-4'">
                 <!-- Duration Chip -->
