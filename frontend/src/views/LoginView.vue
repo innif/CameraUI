@@ -12,6 +12,25 @@
           </v-card-title>
 
           <v-card-text class="pa-6">
+            <!-- Password hint alert -->
+            <v-alert
+              v-if="showPasswordHint"
+              type="info"
+              variant="tonal"
+              prominent
+              closable
+              @click:close="showPasswordHint = false"
+              class="mb-4"
+            >
+              <v-alert-title class="text-h6 mb-2">
+                <v-icon start>mdi-information</v-icon>
+                Passwort vergessen?
+              </v-alert-title>
+              <div class="text-body-1">
+                Das Passwort findest du groß in der Mitte des Anleitungszettels, direkt neben dem QR-Code. Der Zettel liegt in der Garderobe.
+              </div>
+            </v-alert>
+
             <v-form @submit.prevent="handleLogin">
               <!-- Hidden username field to help browsers recognize this as a login form -->
               <v-text-field
@@ -84,6 +103,7 @@ const password = ref('')
 const rememberMe = ref(false)
 const loading = ref(false)
 const errorMessage = ref('')
+const showPasswordHint = ref(false)
 
 // Initialize rememberMe checkbox from localStorage
 const savedRememberMe = localStorage.getItem('rememberMe')
@@ -104,7 +124,8 @@ const handleLogin = async () => {
     const redirectTo = router.currentRoute.value.query.redirect || '/'
     router.push(redirectTo)
   } else {
-    errorMessage.value = 'Das Passwort findest du groß in der Mitte des Anleitungszettels, direkt neben dem QR-Code. Der Zettel liegt in der Garderobe.'
+    errorMessage.value = authStore.authError || 'Login fehlgeschlagen'
+    showPasswordHint.value = true
     password.value = ''
   }
 
