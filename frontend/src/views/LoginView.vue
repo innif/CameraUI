@@ -104,7 +104,7 @@ const handleLogin = async () => {
     const redirectTo = router.currentRoute.value.query.redirect || '/'
     router.push(redirectTo)
   } else {
-    errorMessage.value = authStore.authError || 'Login fehlgeschlagen'
+    errorMessage.value = 'Das Passwort findest du groß in der Mitte des Anleitungszettels, direkt neben dem QR-Code. Der Zettel liegt in der Garderobe.'
     password.value = ''
   }
 
