@@ -15,7 +15,7 @@
             <!-- Password hint alert -->
             <v-alert
               v-if="showPasswordHint"
-              type="info"
+              type="warning"
               variant="tonal"
               prominent
               closable
