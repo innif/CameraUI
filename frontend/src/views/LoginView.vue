@@ -23,7 +23,6 @@
               class="mb-4"
             >
               <v-alert-title class="text-h6 mb-2">
-                <v-icon start>mdi-information</v-icon>
                 Passwort vergessen?
               </v-alert-title>
               <div class="text-body-1">

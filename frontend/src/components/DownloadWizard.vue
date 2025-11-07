@@ -196,7 +196,7 @@
 
               <div v-else-if="videosStore.exportedFile">
                 <v-alert type="success" :class="isMobile ? 'mb-2' : 'mb-4'">
-                  Export erfolgreich abgeschlossen!
+                  Video kann jetzt heruntergeladen werden
                 </v-alert>
 
                 <v-list>
