@@ -75,11 +75,14 @@
                 size="large"
                 block
                 :loading="loading"
-                :disabled="!password || loading"
+                :disabled="!password || loading || authStore.loginCooldown > 0"
                 class="login-btn"
               >
                 <v-icon start>mdi-login</v-icon>
-                Anmelden
+                <span v-if="authStore.loginCooldown > 0">
+                  Warte {{ authStore.loginCooldown }}s
+                </span>
+                <span v-else>Anmelden</span>
               </v-btn>
             </v-form>
           </v-card-text>
