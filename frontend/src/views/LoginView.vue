@@ -195,5 +195,26 @@ const handleLogin = async () => {
   .login-card {
     max-width: 100%;
   }
+
+  /* Make alert more spacious on mobile */
+  :deep(.v-alert) {
+    padding: 1rem !important;
+  }
+
+  :deep(.v-alert-title) {
+    font-size: 1.1rem !important;
+    line-height: 1.4 !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  :deep(.v-alert .text-body-1) {
+    font-size: 0.95rem !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Give the warning icon more space */
+  :deep(.v-alert__prepend) {
+    margin-right: 0.75rem !important;
+  }
 }
 </style>
