@@ -19,7 +19,7 @@
           </v-tab>
         </v-tabs>
 
-        <v-window v-model="activeTab">
+        <v-window v-model="activeTab" :touch="false">
           <!-- Recording Tab -->
           <v-window-item value="recording">
             <!-- Instructions -->
