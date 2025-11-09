@@ -88,20 +88,41 @@ export const useVideosStore = defineStore('videos', () => {
   }
 
   async function fetchFrame(videoId, timestamp) {
+    // Increment request ID to track this request
+    const requestId = ++latestFrameRequestId
+
     try {
       loadingPreview.value = true
-      const response = await api.videos.getFrame(videoId, timestamp)
 
-      if (response.data.success && response.data.frame) {
-        previewFrame.value = response.data.frame
+      // Send request ID to backend so it can cancel outdated requests
+      const response = await api.videos.getFrame(videoId, timestamp, requestId)
+
+      // Only update the preview if this is still the latest request
+      if (requestId === latestFrameRequestId) {
+        if (response.data.success && response.data.frame) {
+          previewFrame.value = response.data.frame
+        }
+      } else {
+        // This request was superseded by a newer one, ignore it
+        console.log('Ignoring outdated frame request')
       }
 
       return response.data
     } catch (err) {
-      console.error('Failed to fetch frame:', err)
+      // Only log error if this is still the latest request
+      if (requestId === latestFrameRequestId) {
+        console.error('Failed to fetch frame:', err)
+      }
+      // Don't rethrow to avoid console noise from cancelled requests
+      if (requestId !== latestFrameRequestId) {
+        return null
+      }
       throw err
     } finally {
-      loadingPreview.value = false
+      // Only clear loading state if this is still the latest request
+      if (requestId === latestFrameRequestId) {
+        loadingPreview.value = false
+      }
     }
   }
 

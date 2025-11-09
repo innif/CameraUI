@@ -295,10 +295,11 @@ async function selectVideo() {
       endTime.value = eightMinutes
     }
 
-    // Load initial preview at start time
-    await updatePreview(startTime.value)
-
+    // Switch to step 2 first, then load preview (so loading animation is visible)
     step.value = 2
+
+    // Load initial preview at start time (async, shows loading animation)
+    updatePreview(startTime.value)
   }
 }
 

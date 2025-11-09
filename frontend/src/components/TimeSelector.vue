@@ -145,7 +145,7 @@ const { mobile } = useDisplay()
 
 const isMobile = computed(() => mobile.value)
 
-// Debounce timer for slider preview updates
+// Debounce timer for preview updates (both slider and buttons)
 let previewDebounceTimer = null
 
 // Debounced preview update function
@@ -155,7 +155,7 @@ function debouncedPreviewUpdate(value) {
   }
   previewDebounceTimer = setTimeout(() => {
     emit('preview', value)
-  }, 500) // Wait 500ms after user stops moving slider
+  }, 600) // Wait 600ms after user stops interacting
 }
 
 const maxDuration = computed(() => {
@@ -181,8 +181,8 @@ function adjustTime(seconds) {
     Math.min(maxDuration.value, props.modelValue + seconds)
   )
   emit('update:modelValue', newValue)
-  // Auto-update preview immediately when buttons are clicked
-  emit('preview', newValue)
+  // Use debounced update for buttons too (prevents flooding when clicking rapidly)
+  debouncedPreviewUpdate(newValue)
 }
 
 function formatTimeAsClock(seconds) {

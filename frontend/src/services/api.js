@@ -100,10 +100,12 @@ export default {
     getById(id) {
       return api.get(`/api/recordings/videos/${id}`)
     },
-    getFrame(id, timestamp) {
-      return api.get(`/api/recordings/videos/${id}/frame`, {
-        params: { timestamp }
-      })
+    getFrame(id, timestamp, requestId = null) {
+      const params = { timestamp }
+      if (requestId !== null) {
+        params.request_id = requestId
+      }
+      return api.get(`/api/recordings/videos/${id}/frame`, { params })
     },
     exportSubclip(id, startTime, endTime) {
       return api.post(`/api/recordings/videos/${id}/export`, {

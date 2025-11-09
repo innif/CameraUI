@@ -143,7 +143,12 @@ async def get_video_by_id(video_id: str, request: Request) -> dict:
 
 
 @router.get("/videos/{video_id}/frame")
-async def get_video_frame(video_id: str, timestamp: float, request: Request):
+async def get_video_frame(
+    video_id: str,
+    timestamp: float,
+    request: Request,
+    request_id: Optional[int] = None
+):
     """Get a frame from a video at a specific timestamp (in seconds)"""
     file_service = request.app.state.file_service
     video = file_service.get_file(video_id)
@@ -157,7 +162,11 @@ async def get_video_frame(video_id: str, timestamp: float, request: Request):
         timestamp_datetime = video.start_time + timedelta(seconds=timestamp)
         timestamp_time = timestamp_datetime.time()
 
-        frame_base64 = await file_service.get_frame_at_time(video_id, timestamp_time)
+        frame_base64 = await file_service.get_frame_at_time(
+            video_id,
+            timestamp_time,
+            request_id=request_id
+        )
 
         if frame_base64:
             return {

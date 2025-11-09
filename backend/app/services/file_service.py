@@ -8,6 +8,8 @@ import base64
 from io import BytesIO
 from PIL import Image
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 
 from app.models.video import VideoFile
 
@@ -16,11 +18,15 @@ logger = logging.getLogger(__name__)
 
 class FileService:
     """Service for managing video files"""
-    
+
     def __init__(self, video_directory: str = "videos"):
         self.video_directory = video_directory
         self.files: List[VideoFile] = []
         self._initialized = False
+        # Track latest frame request IDs per video to cancel outdated requests
+        self._latest_frame_request: Dict[str, int] = {}
+        # Thread pool for blocking I/O operations
+        self._executor = ThreadPoolExecutor(max_workers=4)
     
     async def initialize(self, delete_age: Optional[timedelta] = None):
         """Initialize file service"""
@@ -261,24 +267,31 @@ class FileService:
     async def get_frame_at_time(
         self,
         filename: str,
-        timestamp: time
+        timestamp: time,
+        request_id: Optional[int] = None
     ) -> Optional[str]:
         """
         Get a frame from a video at a specific time as base64
-        
+
         Args:
             filename: Video filename
             timestamp: Time in the video
-        
+            request_id: Optional request ID to track and cancel outdated requests
+
         Returns:
             Base64 encoded image string or None
         """
         try:
+            # Track request ID if provided
+            if request_id is not None:
+                # Update latest request ID for this video
+                self._latest_frame_request[filename] = request_id
+
             video_file = self.get_file(filename)
             if not video_file:
                 logger.error(f"Video file not found: {filename}")
                 return None
-            
+
             # Calculate timestamp in seconds
             # Ensure both datetimes have the same timezone info
             timestamp_datetime = datetime.combine(video_file.start_time.date(), timestamp)
@@ -286,17 +299,22 @@ class FileService:
                 # If start_time is timezone-aware, make timestamp_datetime aware too
                 timestamp_datetime = timestamp_datetime.replace(tzinfo=video_file.start_time.tzinfo)
             timestamp_seconds = (timestamp_datetime - video_file.start_time).total_seconds()
-            
+
             if timestamp_seconds < 0:
                 logger.error("Timestamp before video start")
                 return None
-            
+
+            # Check if this request is still the latest before expensive operation
+            if request_id is not None and self._latest_frame_request.get(filename) != request_id:
+                logger.info(f"Cancelling outdated frame request {request_id} for {filename}")
+                return None
+
             # Extract frame
             video_path = self.get_video_path(filename)
-            frame_base64 = await self._extract_frame_base64(video_path, timestamp_seconds)
-            
+            frame_base64 = await self._extract_frame_base64(video_path, timestamp_seconds, filename, request_id)
+
             return frame_base64
-            
+
         except Exception as e:
             logger.exception(e)
             logger.error(f"Error getting frame from {filename}")
@@ -338,51 +356,109 @@ class FileService:
         """Check if a video file exists"""
         return os.path.exists(self.get_video_path(filename))
     
-    async def _extract_frame_base64(
+    def _extract_frame_sync(
         self,
         video_path: str,
-        timestamp_seconds: float
+        timestamp_seconds: float,
+        filename: Optional[str] = None,
+        request_id: Optional[int] = None
     ) -> Optional[str]:
         """
-        Internal method to extract a frame and encode as base64
-        
+        Synchronous method to extract a frame and encode as base64
+        This runs in a thread pool to avoid blocking the event loop
+
         Args:
             video_path: Path to video file
             timestamp_seconds: Timestamp in seconds
-        
+            filename: Optional filename to check if request is still valid
+            request_id: Optional request ID to check if request is still valid
+
         Returns:
             Base64 encoded JPEG image
         """
         try:
+            # Early check before starting expensive I/O
+            if filename and request_id is not None:
+                if self._latest_frame_request.get(filename) != request_id:
+                    logger.info(f"Skipping outdated request {request_id} early")
+                    return None
+
             # Open video with cv2
             cap = cv2.VideoCapture(video_path)
-            
+
             # Set position to timestamp
             cap.set(cv2.CAP_PROP_POS_MSEC, timestamp_seconds * 1000)
-            
+
             # Read frame
             ret, frame = cap.read()
             cap.release()
-            
+
             if not ret:
                 return None
-            
+
+            # Check if request is still valid before expensive operations
+            if filename and request_id is not None:
+                if self._latest_frame_request.get(filename) != request_id:
+                    logger.info(f"Discarding frame processing for outdated request {request_id}")
+                    return None
+
             # Convert color space and resize
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame = cv2.resize(frame, (800, 450))
-            
+
+            # Check again before final encoding
+            if filename and request_id is not None:
+                if self._latest_frame_request.get(filename) != request_id:
+                    logger.info(f"Discarding frame encoding for outdated request {request_id}")
+                    return None
+
             # Convert to PIL Image and encode as JPEG
             img = Image.fromarray(frame, 'RGB')
             buff = BytesIO()
             img.save(buff, format="JPEG")
-            
+
             # Encode as base64
             img_base64 = base64.b64encode(buff.getvalue()).decode("utf-8")
             return f"data:image/jpg;base64,{img_base64}"
-            
+
         except Exception as e:
             logger.error(f"Error extracting frame: {e}")
             return None
+
+    async def _extract_frame_base64(
+        self,
+        video_path: str,
+        timestamp_seconds: float,
+        filename: Optional[str] = None,
+        request_id: Optional[int] = None
+    ) -> Optional[str]:
+        """
+        Async wrapper for frame extraction that runs in a thread pool
+
+        Args:
+            video_path: Path to video file
+            timestamp_seconds: Timestamp in seconds
+            filename: Optional filename to check if request is still valid
+            request_id: Optional request ID to check if request is still valid
+
+        Returns:
+            Base64 encoded JPEG image
+        """
+        loop = asyncio.get_event_loop()
+
+        # Run the blocking I/O operation in thread pool
+        result = await loop.run_in_executor(
+            self._executor,
+            partial(
+                self._extract_frame_sync,
+                video_path,
+                timestamp_seconds,
+                filename,
+                request_id
+            )
+        )
+
+        return result
     
     def get_filesize(self, filepath: str) -> int:
         """Get file size in bytes"""
