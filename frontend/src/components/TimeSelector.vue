@@ -163,7 +163,7 @@ function debouncedPreviewUpdate(value) {
   }
   previewDebounceTimer = setTimeout(() => {
     emit('preview', value)
-  }, 600) // Wait 600ms after user stops interacting
+  }, 400) // Wait 400ms after user stops interacting
 }
 
 const maxDuration = computed(() => {

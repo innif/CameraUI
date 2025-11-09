@@ -412,9 +412,12 @@ watch(startTime, (newStartTime) => {
   }
 })
 
-// Watch for step changes and update preview when entering step 3 (Endzeit)
+// Watch for step changes and update preview when entering step 2 (Startzeit) or step 3 (Endzeit)
 watch(step, async (newStep) => {
-  if (newStep === 3 && videosStore.selectedVideo) {
+  if (newStep === 2 && videosStore.selectedVideo) {
+    // Automatically load preview for the current startTime
+    await updatePreview(startTime.value)
+  } else if (newStep === 3 && videosStore.selectedVideo) {
     // Automatically load preview for the current endTime
     await updatePreview(endTime.value)
   }
