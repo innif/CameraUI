@@ -304,6 +304,7 @@ function formatTimeShort(seconds) {
   height: 100%;
   object-fit: cover;
   opacity: 0.6;
+  filter: blur(8px);
 }
 
 .loading-overlay {
