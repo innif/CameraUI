@@ -9,8 +9,12 @@ export const useVideosStore = defineStore('videos', () => {
   const previewFrame = ref(null)
   const exportedFile = ref(null)
   const loading = ref(false)
+  const loadingPreview = ref(false)
   const exporting = ref(false)
   const error = ref(null)
+
+  // Track the latest frame request to cancel outdated ones
+  let latestFrameRequestId = 0
 
   // Computed
   const videosList = computed(() => {
@@ -85,6 +89,7 @@ export const useVideosStore = defineStore('videos', () => {
 
   async function fetchFrame(videoId, timestamp) {
     try {
+      loadingPreview.value = true
       const response = await api.videos.getFrame(videoId, timestamp)
 
       if (response.data.success && response.data.frame) {
@@ -95,6 +100,8 @@ export const useVideosStore = defineStore('videos', () => {
     } catch (err) {
       console.error('Failed to fetch frame:', err)
       throw err
+    } finally {
+      loadingPreview.value = false
     }
   }
 
@@ -176,6 +183,7 @@ export const useVideosStore = defineStore('videos', () => {
     previewFrame,
     exportedFile,
     loading,
+    loadingPreview,
     exporting,
     error,
     // Computed

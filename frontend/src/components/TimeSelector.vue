@@ -86,16 +86,30 @@
     </v-row>
 
     <!-- Preview Image -->
-    <div v-if="videosStore.previewFrame" class="preview-container">
+    <div class="preview-container">
+      <!-- Loading State -->
+      <div v-if="videosStore.loadingPreview" class="preview-loading">
+        <v-progress-circular
+          indeterminate
+          :size="isMobile ? 48 : 64"
+          color="primary"
+        ></v-progress-circular>
+        <p class="mt-3 text-grey">Lade Vorschau...</p>
+      </div>
+
+      <!-- Preview Image -->
       <img
+        v-else-if="videosStore.previewFrame"
         :src="`${videosStore.previewFrame}`"
         alt="Vorschau"
         class="preview-image"
       />
-    </div>
-    <div v-else class="preview-placeholder">
-      <v-icon size="64" color="grey">mdi-image-off</v-icon>
-      <p class="text-grey">Keine Vorschau verfügbar</p>
+
+      <!-- Placeholder when no preview available -->
+      <div v-else class="preview-placeholder">
+        <v-icon size="64" color="grey">mdi-image-off</v-icon>
+        <p class="text-grey">Keine Vorschau verfügbar</p>
+      </div>
     </div>
   </div>
 </template>
@@ -249,6 +263,8 @@ function formatTimeShort(seconds) {
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   background-color: #000;
+  min-height: 300px;
+  position: relative;
 }
 
 .preview-image {
@@ -256,6 +272,16 @@ function formatTimeShort(seconds) {
   height: auto;
   display: block;
   object-fit: contain;
+}
+
+.preview-loading {
+  width: 100%;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #f5f5f5;
 }
 
 .preview-placeholder {
@@ -266,11 +292,22 @@ function formatTimeShort(seconds) {
   justify-content: center;
   align-items: center;
   background-color: #f5f5f5;
-  border-radius: 8px;
 }
 
-/* Mobile-responsive preview placeholder */
+/* Mobile-responsive preview placeholder and loading */
 @media (max-width: 599px) {
+  .preview-container {
+    min-height: 180px;
+  }
+
+  .preview-loading {
+    min-height: 180px;
+  }
+
+  .preview-loading p {
+    font-size: 0.875rem;
+  }
+
   .preview-placeholder {
     min-height: 180px;
   }

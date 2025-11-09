@@ -411,6 +411,14 @@ watch(startTime, (newStartTime) => {
   }
 })
 
+// Watch for step changes and update preview when entering step 3 (Endzeit)
+watch(step, async (newStep) => {
+  if (newStep === 3 && videosStore.selectedVideo) {
+    // Automatically load preview for the current endTime
+    await updatePreview(endTime.value)
+  }
+})
+
 onMounted(async () => {
   await videosStore.fetchVideos()
 
