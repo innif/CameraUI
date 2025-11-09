@@ -89,12 +89,20 @@
     <div class="preview-container">
       <!-- Loading State -->
       <div v-if="videosStore.loadingPreview" class="preview-loading">
-        <v-progress-circular
-          indeterminate
-          :size="isMobile ? 48 : 64"
-          color="primary"
-        ></v-progress-circular>
-        <p class="mt-3 text-grey">Lade Vorschau...</p>
+        <!-- Use previous preview frame as background if available, otherwise use loading.png -->
+        <img
+          :src="videosStore.previewFrame || '/loading.png'"
+          alt="Loading"
+          class="loading-background"
+        />
+        <div class="loading-overlay">
+          <v-progress-circular
+            indeterminate
+            :size="isMobile ? 48 : 64"
+            color="primary"
+          ></v-progress-circular>
+          <p class="mt-3 text-grey">Lade Vorschau...</p>
+        </div>
       </div>
 
       <!-- Preview Image -->
@@ -263,8 +271,9 @@ function formatTimeShort(seconds) {
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   background-color: #000;
-  min-height: 300px;
   position: relative;
+  /* Maintain 16:9 aspect ratio */
+  aspect-ratio: 16 / 9;
 }
 
 .preview-image {
@@ -276,17 +285,42 @@ function formatTimeShort(seconds) {
 
 .preview-loading {
   width: 100%;
-  min-height: 300px;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background-color: #f5f5f5;
+  background-color: #000;
+}
+
+.loading-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.6;
+}
+
+.loading-overlay {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .preview-placeholder {
   width: 100%;
-  min-height: 300px;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -296,20 +330,8 @@ function formatTimeShort(seconds) {
 
 /* Mobile-responsive preview placeholder and loading */
 @media (max-width: 599px) {
-  .preview-container {
-    min-height: 180px;
-  }
-
-  .preview-loading {
-    min-height: 180px;
-  }
-
-  .preview-loading p {
+  .loading-overlay p {
     font-size: 0.875rem;
-  }
-
-  .preview-placeholder {
-    min-height: 180px;
   }
 
   .preview-placeholder .v-icon {
