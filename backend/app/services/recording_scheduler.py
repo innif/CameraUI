@@ -31,6 +31,11 @@ class RecordingScheduler:
         self._stop_attempts = 0
         self._last_start_error: Optional[str] = None
         self._last_stop_error: Optional[str] = None
+
+        # Prevent log spam - track last logged warning
+        self._last_warning_logged: Optional[str] = None
+        self._last_warning_time: Optional[datetime] = None
+        self._warning_log_cooldown: int = 60  # Only log same warning once per minute
     
     async def start(self):
         """Start the scheduler"""
@@ -80,21 +85,62 @@ class RecordingScheduler:
     async def _check_recording_schedule(self):
         """Check if recording should start or stop based on schedule"""
         is_recording_time = self._is_recording_time()
-        
+
         if is_recording_time:
-            # Should be recording
-            if not self.auto_started and not self.obs_service.recording:
-                logger.info("Starting automatic recording")
-                success = await self.start_recording()
-                if success:
-                    self.auto_started = True
+            # Should be recording - continuously try to start if not recording
+            if not self.obs_service.recording:
+                if not self.auto_started:
+                    # First attempt to start during scheduled time
+                    logger.info("Starting automatic recording (scheduled time)")
+                    success = await self.start_recording()
+                    if success:
+                        self.auto_started = True
+                    else:
+                        # Log warning with cooldown to prevent spam
+                        self._log_with_cooldown(
+                            f"Failed to start automatic recording. "
+                            f"Will retry continuously. Reason: {self._last_start_error}",
+                            level="warning"
+                        )
+                else:
+                    # Was recording before but stopped unexpectedly
+                    # Log this only once per cooldown period
+                    should_log = self._should_log_warning("recording_stopped_unexpectedly")
+                    if should_log:
+                        logger.warning(
+                            "Recording stopped unexpectedly during scheduled time. "
+                            "Attempting to restart..."
+                        )
+                    success = await self.start_recording()
+                    if success:
+                        # Recording restarted successfully
+                        logger.info("Recording successfully restarted after unexpected stop")
+                        # Reset warning cooldown since we recovered
+                        self._last_warning_logged = None
+                        self._last_warning_time = None
+                    elif should_log:
+                        logger.error(
+                            f"Failed to restart recording. "
+                            f"Will retry continuously. Reason: {self._last_start_error}"
+                        )
         else:
             # Should not be recording
             if self.obs_service.recording and self.auto_started:
-                logger.info("Stopping automatic recording")
+                logger.info("Stopping automatic recording (outside scheduled time)")
                 success = await self.stop_recording()
                 if success:
                     self.auto_started = False
+                else:
+                    self._log_with_cooldown(
+                        f"Failed to stop automatic recording. "
+                        f"Will retry continuously. Reason: {self._last_stop_error}",
+                        level="warning"
+                    )
+
+            # Reset auto_started flag when outside recording time
+            # This ensures clean state for next recording session
+            if not is_recording_time and self.auto_started and not self.obs_service.recording:
+                self.auto_started = False
     
     async def _check_shutdown_schedule(self):
         """Check if system should shutdown"""
@@ -108,6 +154,41 @@ class RecordingScheduler:
         #         subprocess.run(["shutdown", "-h", "now"])
         #     except Exception as e:
         #         logger.error(f"Failed to shutdown system: {e}")
+
+    def _should_log_warning(self, warning_key: str) -> bool:
+        """
+        Check if enough time has passed to log the same warning again.
+        Returns True if the warning should be logged.
+        """
+        now = datetime.now(timezone.utc)
+
+        # If this is a different warning, always log it
+        if self._last_warning_logged != warning_key:
+            self._last_warning_logged = warning_key
+            self._last_warning_time = now
+            return True
+
+        # Same warning - check cooldown
+        if self._last_warning_time is None:
+            self._last_warning_time = now
+            return True
+
+        time_since_last = (now - self._last_warning_time).total_seconds()
+        if time_since_last >= self._warning_log_cooldown:
+            self._last_warning_time = now
+            return True
+
+        return False
+
+    def _log_with_cooldown(self, message: str, level: str = "warning"):
+        """Log a message with cooldown to prevent spam"""
+        if self._should_log_warning(message):
+            if level == "warning":
+                logger.warning(message)
+            elif level == "error":
+                logger.error(message)
+            elif level == "info":
+                logger.info(message)
     
     async def start_recording(self) -> bool:
         """
